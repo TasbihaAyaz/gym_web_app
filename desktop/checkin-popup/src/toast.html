@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Check-in</title>
+    <link rel="stylesheet" href="toast.css" />
+    <script type="module" src="toast.js" defer></script>
+  </head>
+  <body>
+    <aside id="toast-root" class="toast-root" hidden>
+      <div id="toast" class="toast" role="status">
+        <button type="button" id="toast-close" class="toast-close" aria-label="Close">×</button>
+        <div class="toast-top">
+          <div id="toast-avatar" class="toast-avatar">FG</div>
+          <div>
+            <div id="toast-badge" class="toast-badge">Welcome</div>
+            <div id="toast-name" class="toast-name">Member</div>
+            <div id="toast-sub" class="toast-sub">Checked in successfully</div>
+            <div class="toast-meta">
+              <span id="toast-code">Bio ID —</span>
+              <span>·</span>
+              <span id="toast-time">--:--</span>
+            </div>
+          </div>
+        </div>
+        <div id="toast-fee" class="toast-body" data-status="none">
+          <div class="toast-row"><span>Package</span><strong id="toast-package">—</strong></div>
+          <div class="toast-row"><span>Fee status</span><span id="toast-fee-chip" class="fee-chip">—</span></div>
+          <div class="toast-row" id="toast-fee-range-row" hidden>
+            <span>Valid</span><span id="toast-fee-range">—</span>
+          </div>
+          <div class="toast-row" id="toast-pending-row" hidden>
+            <span>Fee pending</span><strong id="toast-pending" class="pending">—</strong>
+          </div>
+          <p id="toast-note" class="toast-note"></p>
+        </div>
+      </div>
+    </aside>
+
+    <audio id="audio-checkin" preload="auto"></audio>
+    <audio id="audio-expired" preload="auto"></audio>
+  </body>
+</html>

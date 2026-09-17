@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fit Generation â€” Gym Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9v6M8 6v12M12 10v4M16 6v12M20 9v6"/></svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-name editable" contenteditable="true">Fit Generation</span>
+      <span class="logo-sub editable" contenteditable="true">GYM MANAGEMENT</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
+      <span>Dashboard</span>
+    </a>
+
+    <div class="nav-section">Management</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Members</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Trainers</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Classes</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>
+      <span>Plans &amp; Packages</span>
+    </a>
+
+    <div class="nav-section">Finance</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+      <span>Invoices</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+      <span>Payments</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+      <span>Expenses</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="m5 6 7-3 7 3"/><path d="M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+      <span>Accounts</span>
+    </a>
+
+    <div class="nav-section">Operations</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M9 11.5 11 13.5 15 9.5"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4"/></svg>
+      <span>Attendance</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M6.5 6.5 17.5 17.5"/><path d="m21 21-1.5-1.5"/><path d="m3 3 1.5 1.5"/><path d="M18 22l4-4"/><path d="M2 6l4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+      <span>Equipment</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <span>Maintenance</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+      <span>Reports</span>
+    </a>
+
+    <div class="nav-section">Settings</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+      <span>Users</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Roles &amp; Permissions</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search members, plans, invoices..." />
+      <span class="kbd">Ctrl + K</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge-dot">1</span>
+      </button>
+      <button class="icon-btn">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+        <span class="badge-dot red">3</span>
+      </button>
+      <div class="profile">
+        <img src="https://i.pravatar.cc/80?img=12" alt="avatar" />
+        <div class="profile-info">
+          <span class="profile-name editable" contenteditable="true">John Doe</span>
+          <span class="profile-role editable" contenteditable="true">Admin</span>
+        </div>
+        <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <h1 class="editable" contenteditable="true">Dashboard</h1>
+        <p class="editable" contenteditable="true">Welcome back, John! Here's what's happening at your gym today.</p>
+      </div>
+      <div class="page-header-actions">
+        <button class="date-select">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span class="editable" contenteditable="true">May 12 â€” May 18, 2025</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <button class="filter-btn">
+          <svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+          Filter
+        </button>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label editable" contenteditable="true">Total Members</span>
+          <div class="stat-value-row">
+            <span class="stat-value editable" contenteditable="true">1,248</span>
+            <span class="stat-trend up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="editable" contenteditable="true">12.5%</span></span>
+          </div>
+          <span class="stat-sub editable" contenteditable="true">vs last week</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label editable" contenteditable="true">Active Members</span>
+          <div class="stat-value-row">
+            <span class="stat-value editable" contenteditable="true">846</span>
+            <span class="stat-trend up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="editable" contenteditable="true">8.2%</span></span>
+          </div>
+          <span class="stat-sub editable" contenteditable="true">vs last week</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon violet">
+          <svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label editable" contenteditable="true">Monthly Revenue</span>
+          <div class="stat-value-row">
+            <span class="stat-value editable" contenteditable="true">₨28,540</span>
+            <span class="stat-trend up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="editable" contenteditable="true">15.3%</span></span>
+          </div>
+          <span class="stat-sub editable" contenteditable="true">vs last month</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label editable" contenteditable="true">Due Payments</span>
+          <div class="stat-value-row">
+            <span class="stat-value editable" contenteditable="true">₨4,230</span>
+            <span class="stat-trend up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="editable" contenteditable="true">5.7%</span></span>
+          </div>
+          <span class="stat-sub editable" contenteditable="true">vs last week</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label editable" contenteditable="true">New Enrollments</span>
+          <div class="stat-value-row">
+            <span class="stat-value editable" contenteditable="true">32</span>
+            <span class="stat-trend up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span class="editable" contenteditable="true">14.9%</span></span>
+          </div>
+          <span class="stat-sub editable" contenteditable="true">vs last week</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 2 : Revenue / Membership / Enrollments -->
+    <section class="grid-row">
+      <div class="card revenue-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Revenue Overview</h3>
+          <button class="mini-select"><span class="editable" contenteditable="true">This Week</span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div class="chart-wrap tall"><canvas id="revenueChart"></canvas></div>
+        <div class="chart-hint">Tip: drag any point on the line to change its value</div>
+      </div>
+
+      <div class="card membership-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Membership Status</h3>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="donut-center">
+            <span class="donut-total" id="donutTotal">1,248</span>
+            <span class="donut-label">Total</span>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="legend-item"><span class="dot green"></span><span class="legend-name editable" contenteditable="true">Active</span>
+            <span class="legend-val"><span class="editable donut-val" data-idx="0" contenteditable="true">846</span> <span class="legend-pct" data-pct="0">(67.8%)</span></span></div>
+          <div class="legend-item"><span class="dot orange"></span><span class="legend-name editable" contenteditable="true">Leave</span>
+            <span class="legend-val"><span class="editable donut-val" data-idx="1" contenteditable="true">256</span> <span class="legend-pct" data-pct="1">(20.5%)</span></span></div>
+          <div class="legend-item"><span class="dot blue"></span><span class="legend-name editable" contenteditable="true">Pending</span>
+            <span class="legend-val"><span class="editable donut-val" data-idx="2" contenteditable="true">102</span> <span class="legend-pct" data-pct="2">(8.2%)</span></span></div>
+          <div class="legend-item"><span class="dot red"></span><span class="legend-name editable" contenteditable="true">Cancelled</span>
+            <span class="legend-val"><span class="editable donut-val" data-idx="3" contenteditable="true">44</span> <span class="legend-pct" data-pct="3">(3.5%)</span></span></div>
+        </div>
+        <button class="ghost-btn">View All</button>
+      </div>
+
+      <div class="card enrollments-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Recent Enrollments</h3>
+        </div>
+        <div class="people-list">
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=32" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Brooklyn Simmons</span>
+              <span class="person-sub editable" contenteditable="true">May 18, 2025</span>
+            </div>
+            <span class="tag premium editable" contenteditable="true">Premium</span>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=13" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Cameron Williamson</span>
+              <span class="person-sub editable" contenteditable="true">May 18, 2025</span>
+            </div>
+            <span class="tag premium editable" contenteditable="true">Premium</span>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=53" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Darrell Steward</span>
+              <span class="person-sub editable" contenteditable="true">May 17, 2025</span>
+            </div>
+            <span class="tag standard editable" contenteditable="true">Standard</span>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=59" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Ralph Edwards</span>
+              <span class="person-sub editable" contenteditable="true">May 16, 2025</span>
+            </div>
+            <span class="tag basic editable" contenteditable="true">Basic</span>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=68" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Leslie Alexander</span>
+              <span class="person-sub editable" contenteditable="true">May 16, 2025</span>
+            </div>
+            <span class="tag standard editable" contenteditable="true">Standard</span>
+          </div>
+        </div>
+        <button class="ghost-btn">View All Enrollments</button>
+      </div>
+    </section>
+
+    <!-- Row 3 : Classes / Income vs Expenses / Pending Payments -->
+    <section class="grid-row">
+      <div class="card classes-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Popular Classes</h3>
+          <a class="link" href="#">View All</a>
+        </div>
+        <div class="class-list">
+          <div class="class-row">
+            <img src="https://i.pravatar.cc/64?img=33" alt="" class="class-img" />
+            <div class="class-info">
+              <span class="class-name editable" contenteditable="true">Strength Training</span>
+              <span class="class-coach editable" contenteditable="true">Coach Mike</span>
+            </div>
+            <div class="class-members">
+              <span class="editable class-members-num" contenteditable="true">25</span>
+              <span class="muted">Members</span>
+            </div>
+            <div class="class-capacity">
+              <div class="cap-top"><span class="editable cap-val" contenteditable="true">75</span><span>%</span>&nbsp;<span class="muted">Capacity</span></div>
+              <div class="cap-bar"><div class="cap-fill purple" style="width:75%"></div></div>
+            </div>
+          </div>
+          <div class="class-row">
+            <img src="https://i.pravatar.cc/64?img=26" alt="" class="class-img" />
+            <div class="class-info">
+              <span class="class-name editable" contenteditable="true">HIIT Cardio</span>
+              <span class="class-coach editable" contenteditable="true">Coach Sarah</span>
+            </div>
+            <div class="class-members">
+              <span class="editable class-members-num" contenteditable="true">18</span>
+              <span class="muted">Members</span>
+            </div>
+            <div class="class-capacity">
+              <div class="cap-top"><span class="editable cap-val" contenteditable="true">60</span><span>%</span>&nbsp;<span class="muted">Capacity</span></div>
+              <div class="cap-bar"><div class="cap-fill violet" style="width:60%"></div></div>
+            </div>
+          </div>
+          <div class="class-row">
+            <img src="https://i.pravatar.cc/64?img=45" alt="" class="class-img" />
+            <div class="class-info">
+              <span class="class-name editable" contenteditable="true">Yoga Flex</span>
+              <span class="class-coach editable" contenteditable="true">Coach Emma</span>
+            </div>
+            <div class="class-members">
+              <span class="editable class-members-num" contenteditable="true">22</span>
+              <span class="muted">Members</span>
+            </div>
+            <div class="class-capacity">
+              <div class="cap-top"><span class="editable cap-val" contenteditable="true">55</span><span>%</span>&nbsp;<span class="muted">Capacity</span></div>
+              <div class="cap-bar"><div class="cap-fill amber" style="width:55%"></div></div>
+            </div>
+          </div>
+          <div class="class-row">
+            <img src="https://i.pravatar.cc/64?img=48" alt="" class="class-img" />
+            <div class="class-info">
+              <span class="class-name editable" contenteditable="true">Zumba Dance</span>
+              <span class="class-coach editable" contenteditable="true">Coach Anna</span>
+            </div>
+            <div class="class-members">
+              <span class="editable class-members-num" contenteditable="true">30</span>
+              <span class="muted">Members</span>
+            </div>
+            <div class="class-capacity">
+              <div class="cap-top"><span class="editable cap-val" contenteditable="true">80</span><span>%</span>&nbsp;<span class="muted">Capacity</span></div>
+              <div class="cap-bar"><div class="cap-fill pink" style="width:80%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card income-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Income vs Expenses</h3>
+          <button class="mini-select"><span class="editable" contenteditable="true">This Month</span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div class="bar-legend">
+          <span><i class="sq green"></i> Income</span>
+          <span><i class="sq red"></i> Expenses</span>
+        </div>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+        <div class="chart-hint">Tip: drag any bar to change its value</div>
+      </div>
+
+      <div class="card payments-card">
+        <div class="card-head">
+          <h3 class="editable" contenteditable="true">Pending Payments</h3>
+          <a class="link" href="#">View All</a>
+        </div>
+        <div class="people-list">
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=52" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Wade Warren</span>
+              <span class="person-sub editable" contenteditable="true">INV-2025-105</span>
+            </div>
+            <div class="pay-right">
+              <span class="pay-amt editable" contenteditable="true">₨120.00</span>
+              <span class="due-tag editable" contenteditable="true">Due in 2 days</span>
+            </div>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=25" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Theresa Webb</span>
+              <span class="person-sub editable" contenteditable="true">INV-2025-106</span>
+            </div>
+            <div class="pay-right">
+              <span class="pay-amt editable" contenteditable="true">₨150.00</span>
+              <span class="due-tag editable" contenteditable="true">Due in 3 days</span>
+            </div>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=60" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Devon Lane</span>
+              <span class="person-sub editable" contenteditable="true">INV-2025-107</span>
+            </div>
+            <div class="pay-right">
+              <span class="pay-amt editable" contenteditable="true">₨200.00</span>
+              <span class="due-tag editable" contenteditable="true">Due in 5 days</span>
+            </div>
+          </div>
+          <div class="person-row">
+            <img src="https://i.pravatar.cc/64?img=15" alt="" />
+            <div class="person-info">
+              <span class="person-name editable" contenteditable="true">Floyd Miles</span>
+              <span class="person-sub editable" contenteditable="true">INV-2025-108</span>
+            </div>
+            <div class="pay-right">
+              <span class="pay-amt editable" contenteditable="true">₨180.00</span>
+              <span class="due-tag editable" contenteditable="true">Due in 6 days</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick actions -->
+    <section class="quick-actions">
+      <div class="qa-text">
+        <h3 class="editable" contenteditable="true">Quick Actions</h3>
+        <p class="editable" contenteditable="true">Save time with these shortcuts</p>
+      </div>
+      <div class="qa-buttons">
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
+          Add Member
+        </button>
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15h6"/></svg></span>
+          New Invoice
+        </button>
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></span>
+          Record Payment
+        </button>
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></span>
+          Add Expense
+        </button>
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></span>
+          Schedule Class
+        </button>
+        <button class="qa-btn">
+          <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></span>
+          View Reports
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

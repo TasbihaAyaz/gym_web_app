@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fit Gen Check-in",
+  "version": "0.1.2",
+  "identifier": "com.fitgeneration.checkin",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Fit Gen Check-in",
+        "width": 420,
+        "height": 720,
+        "minWidth": 360,
+        "minHeight": 560,
+        "resizable": true,
+        "alwaysOnTop": false,
+        "center": true,
+        "visible": true
+      },
+      {
+        "label": "toast",
+        "title": "Check-in",
+        "url": "toast.html",
+        "width": 400,
+        "height": 340,
+        "resizable": false,
+        "decorations": false,
+        "transparent": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": true,
+        "center": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' https: http: data: blob:; media-src 'self' https: http: data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' https: http:; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

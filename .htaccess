@@ -1,0 +1,26 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Preserve Authorization header for Sanctum / API tokens (Apache)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Serve static files from /public without showing /public in the URL
+    RewriteRule ^(assets/.*)$ public/$1 [L]
+    RewriteRule ^(storage/.*)$ public/$1 [L]
+    RewriteRule ^(voice/.*)$ public/$1 [L]
+    RewriteRule ^sw\.js$ public/sw.js [L]
+    RewriteRule ^favicon\.ico$ public/favicon.ico [L]
+    RewriteRule ^robots\.txt$ public/robots.txt [L]
+
+    # Front controller
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+DirectoryIndex index.php

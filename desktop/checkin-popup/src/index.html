@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fit Gen Check-in</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="main.js" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <section id="view-login" class="panel">
+        <div class="brand">
+          <div class="brand-mark">FG</div>
+          <div>
+            <h1>Fit Generation</h1>
+            <p>Desktop check-in display</p>
+          </div>
+        </div>
+
+        <label>
+          Gym website URL
+          <input id="server-url" type="url" placeholder="https://yourdomain.com" autocomplete="url" />
+        </label>
+        <p class="hint">Use your live site base URL (no trailing slash). Example: <code>https://gym.example.com</code> or local <code>http://localhost/fit-generation</code></p>
+
+        <label>
+          Email
+          <input id="email" type="email" placeholder="admin@fitgeneration.com" autocomplete="username" />
+        </label>
+        <label>
+          Password
+          <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </label>
+
+        <button type="button" id="btn-login" class="btn primary">Connect &amp; start</button>
+        <p id="login-error" class="error" hidden></p>
+      </section>
+
+      <section id="view-live" class="panel" hidden>
+        <header class="live-top">
+          <div>
+            <div class="eyebrow">Live check-ins</div>
+            <strong id="gym-name">Fit Generation</strong>
+          </div>
+          <span id="conn-pill" class="pill offline"><i></i><span>Offline</span></span>
+        </header>
+
+        <div class="status-card">
+          <div class="row">
+            <span>Server</span>
+            <strong id="server-label">—</strong>
+          </div>
+          <div class="row">
+            <span>Signed in</span>
+            <strong id="user-label">—</strong>
+          </div>
+          <div class="row">
+            <span>Last event</span>
+            <strong id="last-label">Waiting…</strong>
+          </div>
+        </div>
+
+        <p class="hint center">Keep this window open. Check-in popups appear as a separate always-on-top window with voice.</p>
+
+        <div class="actions">
+          <button type="button" id="btn-test-sound" class="btn ghost">Test sound</button>
+          <button type="button" id="btn-logout" class="btn danger">Disconnect</button>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
