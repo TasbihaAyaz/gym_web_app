@@ -164,6 +164,14 @@ class SettingController extends Controller
                 'rules' => ['required', 'string', 'max:20'],
             ],
             [
+                'key' => 'admission_fee',
+                'label' => 'Default Admission Fee',
+                'group' => 'finance',
+                'type' => 'number',
+                'default' => '0',
+                'rules' => ['nullable', 'numeric', 'min:0'],
+            ],
+            [
                 'key' => 'tax_rate',
                 'label' => 'Default Tax Rate (%)',
                 'group' => 'finance',

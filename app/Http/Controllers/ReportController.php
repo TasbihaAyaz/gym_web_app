@@ -377,6 +377,8 @@ class ReportController extends Controller
             $member = $payment->member;
             $joined = $member?->joined_at?->toDateString();
             $payDate = $payment->payment_date?->toDateString();
+            $isAdmission = str_starts_with((string) $payment->reference, 'ADM-MEMBER-')
+                || str_starts_with((string) $payment->notes, 'Admission fee');
             $isNew = $joined && $payDate && $joined === $payDate;
 
             $details = [];
@@ -395,7 +397,9 @@ class ReportController extends Controller
                 'sort_date' => $payment->payment_date?->toDateString(),
                 'sort_id' => $payment->id,
                 'date' => $payment->payment_date,
-                'type' => $isNew ? 'New Member' : ($payment->plan?->name ? 'Fee Renewal' : 'Fee Payment'),
+                'type' => $isAdmission
+                    ? 'Admission Fee'
+                    : ($isNew ? 'New Member' : ($payment->plan?->name ? 'Fee Renewal' : 'Fee Payment')),
                 'type_class' => 'active',
                 'voucher' => $payment->payment_number,
                 'account_label' => $member

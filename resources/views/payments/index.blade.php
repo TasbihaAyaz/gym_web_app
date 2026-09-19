@@ -71,7 +71,15 @@
                             <td><span class="code-pill">{{ $payment->payment_number }}</span></td>
                             <td style="font-weight:700;font-size:1.05rem;color:#000"><span class="code-pill" style="font-weight:700;font-size:1.05rem;color:#000;background:transparent;padding:0">{{ $payment->member?->member_code ?? '—' }}</span></td>
                             <td style="font-weight:600">{{ $payment->member?->full_name ?? '—' }}</td>
-                            <td>{{ $payment->plan?->name ?? '—' }}</td>
+                            <td>
+                                @if($payment->plan?->name)
+                                    {{ $payment->plan->name }}
+                                @elseif(str_starts_with((string) $payment->reference, 'ADM-MEMBER-') || str_starts_with((string) $payment->notes, 'Admission fee'))
+                                    Admission fee
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td>{{ $payment->payment_date?->format('M d, Y') }}</td>
                             <td>{{ ucfirst(str_replace('_',' ',$payment->method)) }}</td>
                             <td style="font-weight:700">{{ money($payment->amount) }}</td>

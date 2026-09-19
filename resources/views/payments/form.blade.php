@@ -42,7 +42,7 @@
                     @endforeach
                 </select>
                 @error('membership_plan_id')<span class="field-error">{{ $message }}</span>@enderror
-                <p class="field-hint">Fee is collected against this package. Underpayment can be waived as discount.</p>
+                <p class="field-hint">Fee is collected against this package. Monthly fee is cash received; balance stays outstanding separately. Discount is only on new member registration.</p>
             </div>
             <div class="form-group">
                 <label>Fee From Date</label>
@@ -67,11 +67,22 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Amount paid ({{ currency_symbol() }}) <span class="req">*</span></label>
-                <input type="number" step="0.01" min="0.01" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $payment->amount ?? '') }}" required>
+                <label>Monthly fee ({{ currency_symbol() }}) <span class="req">*</span></label>
+                <input type="number" step="0.01" min="0.01" name="amount" id="amount" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $payment->amount ?? request('amount')) }}" required>
                 @error('amount')<span class="field-error">{{ $message }}</span>@enderror
-                <p class="field-hint" id="discount-hint" hidden></p>
+                <p class="field-hint" id="fee-split-hint" hidden></p>
             </div>
+            @unless($isEdit)
+            @if(request()->boolean('collect_balance'))
+                <input type="hidden" name="collect_balance" value="1">
+            @endif
+            <div class="form-group">
+                <label>Balance ({{ currency_symbol() }})</label>
+                <input type="number" step="0.01" min="0" name="balance" id="balance" class="form-control @error('balance') is-invalid @enderror" value="{{ old('balance', request()->boolean('collect_balance') ? 0 : 0) }}" placeholder="0">
+                @error('balance')<span class="field-error">{{ $message }}</span>@enderror
+                <p class="field-hint">Outstanding due only — not counted as a payment or cash received.</p>
+            </div>
+            @endunless
             <div class="form-group">
                 <label>Method <span class="req">*</span></label>
                 <select name="method" class="form-select" required>
@@ -97,14 +108,8 @@
                 </select>
             </div>
             <div class="form-group full">
-                <label class="checkbox-label" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-                    <input type="checkbox" name="apply_package_discount" value="1" @checked(old('apply_package_discount', true)) style="margin-top:3px">
-                    <span>If amount is less than package price, count the remaining as <strong>discount</strong> (clear fee balance)</span>
-                </label>
-            </div>
-            <div class="form-group full">
                 <label>Notes</label>
-                <textarea name="notes" class="form-textarea" rows="3">{{ old('notes', $payment->notes ?? '') }}</textarea>
+                <textarea name="notes" class="form-textarea" rows="3">{{ old('notes', $payment->notes ?? (request()->boolean('collect_balance') ? 'Balance collection' : '')) }}</textarea>
             </div>
         </div>
 
@@ -186,10 +191,11 @@
   const symbol = @json(currency_symbol());
   const memberSelect = document.getElementById('member_id');
   const amountInput = document.getElementById('amount');
+  const balanceInput = document.getElementById('balance');
   const planSelect = document.getElementById('membership_plan_id');
   const startInput = document.getElementById('fee_start_date');
   const endInput = document.getElementById('fee_end_date');
-  const hint = document.getElementById('discount-hint');
+  const hint = document.getElementById('fee-split-hint');
   const contextBox = document.getElementById('member-context');
   let expiryManual = false;
 
@@ -204,6 +210,11 @@
     return symbol + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
+  function num(el) {
+    const v = parseFloat(el?.value || '');
+    return Number.isFinite(v) ? v : 0;
+  }
+
   function suggestEndFromPlan() {
     if (expiryManual || !startInput?.value || !endInput || !planSelect) return;
     const opt = planSelect.selectedOptions?.[0];
@@ -211,19 +222,22 @@
     endInput.value = addDays(startInput.value, Number(opt.dataset.duration || 30));
   }
 
-  function updateDiscountHint() {
+  function updateFeeHint() {
     if (!hint) return;
     const planOpt = planSelect?.selectedOptions?.[0];
-    const paid = parseFloat(amountInput?.value || '0') || 0;
+    const monthly = num(amountInput);
+    const balance = num(balanceInput);
     const due = planOpt?.value ? (parseFloat(planOpt.dataset.price) || 0) : 0;
     const label = planOpt?.dataset?.name || 'Package';
 
-    if (due > 0 && paid > 0 && paid < due) {
+    if (due > 0) {
+      const sum = monthly + balance;
+      const ok = Math.abs(sum - due) < 0.01;
       hint.hidden = false;
-      hint.textContent = label + ' ' + money(due) + ' − paid ' + money(paid) + ' → discount ' + money(due - paid) + ' (balance cleared)';
-    } else if (due > 0 && paid >= due) {
-      hint.hidden = false;
-      hint.textContent = 'Full package amount covered. No discount.';
+      hint.textContent = label + ' ' + money(due)
+        + ' = monthly fee ' + money(monthly)
+        + ' + balance ' + money(balance)
+        + (ok ? '. Balance is not a payment.' : ' (check: currently ' + money(sum) + '). Balance is not a payment.');
     } else {
       hint.hidden = true;
       hint.textContent = '';
@@ -266,7 +280,7 @@
       setText('mc-trainer', trainer ? (trainer.name + (trainer.phone ? ' · ' + trainer.phone : '')) : 'Self training');
       setText('mc-package', pkg ? (pkg.plan_name + ' · ' + money(pkg.plan_price)) : 'No active package');
       setText('mc-period', pkg ? (pkg.start_label + ' → ' + pkg.end_label) : '—');
-      setText('mc-paid', pkg ? money(pkg.amount_paid) : '—');
+      setText('mc-paid', pkg ? (money(pkg.amount_paid) + ((pkg.balance_due || 0) > 0 ? (' · Bal ' + money(pkg.balance_due)) : '')) : '—');
 
       const badge = document.getElementById('mc-fee-badge');
       if (badge) {
@@ -305,7 +319,7 @@
         if (amountInput && suggested.amount && !amountInput.dataset.touched) {
           amountInput.value = Number(suggested.amount).toFixed(2);
         }
-        updateDiscountHint();
+        updateFeeHint();
       }
     } catch (err) {
       console.warn('[payment] member context failed', err);
@@ -316,15 +330,16 @@
   planSelect?.addEventListener('change', () => {
     const opt = planSelect.selectedOptions[0];
     if (!opt?.value) {
-      updateDiscountHint();
+      updateFeeHint();
       return;
     }
     if (opt.dataset.price && amountInput && !amountInput.dataset.touched) {
       amountInput.value = Number(opt.dataset.price).toFixed(2);
+      if (balanceInput && !balanceInput.dataset.touched) balanceInput.value = '0.00';
     }
     if (startInput && !startInput.value) startInput.value = new Date().toISOString().slice(0, 10);
     suggestEndFromPlan();
-    updateDiscountHint();
+    updateFeeHint();
   });
 
   startInput?.addEventListener('change', suggestEndFromPlan);
@@ -333,20 +348,29 @@
 
   amountInput?.addEventListener('input', () => {
     amountInput.dataset.touched = '1';
-    updateDiscountHint();
+    updateFeeHint();
+  });
+  balanceInput?.addEventListener('input', () => {
+    balanceInput.dataset.touched = '1';
+    updateFeeHint();
   });
 
   memberSelect?.addEventListener('change', () => {
     expiryManual = false;
     if (amountInput) delete amountInput.dataset.touched;
+    if (balanceInput) delete balanceInput.dataset.touched;
     loadMemberContext(memberSelect.value, true);
   });
+
+  if (amountInput?.value) {
+    amountInput.dataset.touched = '1';
+  }
 
   if (memberSelect?.value) {
     loadMemberContext(memberSelect.value, !@json($isEdit));
   }
 
-  updateDiscountHint();
+  updateFeeHint();
 })();
 </script>
 @endpush

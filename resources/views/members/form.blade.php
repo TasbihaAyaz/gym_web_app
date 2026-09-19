@@ -113,13 +113,18 @@
             $subscription = $subscription ?? ($member->activeSubscription ?? null);
             $defaultStart = old('fee_start_date', $subscription?->start_date?->format('Y-m-d') ?? now()->format('Y-m-d'));
             $defaultEnd = old('fee_end_date', $subscription?->end_date?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d'));
+            $defaultAdmission = old(
+                'admission_fee',
+                $existingAdmissionFee
+                    ?? (($defaultAdmissionFee ?? 0) > 0 ? $defaultAdmissionFee : '')
+            );
         @endphp
 
         <div class="fee-period-card">
             <div class="card-head" style="margin-bottom:14px">
                 <div>
                     <h3 style="font-size:15px">Fee / Membership Period</h3>
-                    <p style="font-size:12.5px;color:var(--text-dim);margin-top:3px">Select package and fee validity from date to expiry date</p>
+                    <p style="font-size:12.5px;color:var(--text-dim);margin-top:3px">Select package, collect admission fee, and set fee validity dates</p>
                 </div>
             </div>
             <div class="form-grid">
@@ -138,11 +143,17 @@
                         @endforeach
                     </select>
                     @error('membership_plan_id')<span class="field-error">{{ $message }}</span>@enderror
-                    <p class="field-hint">Selecting a package records fee revenue. Split as paid + discount + balance.</p>
+                    <p class="field-hint">Selecting a package records fee revenue. Split as monthly fee + discount + balance.</p>
                 </div>
                 <div class="form-group">
-                    <label>Amount paid ({{ currency_symbol() }})</label>
-                    <input type="number" step="0.01" min="0" name="fee_amount_paid" id="fee_amount_paid" class="form-control @error('fee_amount_paid') is-invalid @enderror" value="{{ old('fee_amount_paid', $subscription->amount_paid ?? '') }}" placeholder="Cash received">
+                    <label>Admission fee ({{ currency_symbol() }})</label>
+                    <input type="number" step="0.01" min="0" name="admission_fee" id="admission_fee" class="form-control @error('admission_fee') is-invalid @enderror" value="{{ $defaultAdmission }}" placeholder="One-time joining fee">
+                    @error('admission_fee')<span class="field-error">{{ $message }}</span>@enderror
+                    <p class="field-hint">One-time joining fee, separate from package amount. Leave blank if not collected.</p>
+                </div>
+                <div class="form-group">
+                    <label>Monthly fee ({{ currency_symbol() }})</label>
+                    <input type="number" step="0.01" min="0" name="fee_amount_paid" id="fee_amount_paid" class="form-control @error('fee_amount_paid') is-invalid @enderror" value="{{ old('fee_amount_paid', $subscription->amount_paid ?? '') }}" placeholder="Cash received for package">
                     @error('fee_amount_paid')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
@@ -162,7 +173,7 @@
                     <label>Balance ({{ currency_symbol() }})</label>
                     <input type="number" step="0.01" min="0" name="fee_balance" id="fee_balance" class="form-control @error('fee_balance') is-invalid @enderror" value="{{ $oldBalance ?? old('fee_balance', $subscription->balance_due ?? '') }}" placeholder="0">
                     @error('fee_balance')<span class="field-error">{{ $message }}</span>@enderror
-                    <p class="field-hint" id="fee-discount-hint">Package = amount paid + discount + balance due.</p>
+                    <p class="field-hint" id="fee-discount-hint">Typing discount auto-reduces Monthly fee. Total = Admission + Monthly − Balance.</p>
                 </div>
                 <div class="form-group">
                     <label>Subscription Status</label>
@@ -182,6 +193,15 @@
                     <input type="date" name="fee_end_date" id="fee_end_date" class="form-control @error('fee_end_date') is-invalid @enderror" value="{{ $defaultEnd }}">
                     @error('fee_end_date')<span class="field-error">{{ $message }}</span>@enderror
                     <p class="field-hint" id="fee-period-hint">End date auto-fills from package duration; you can change it.</p>
+                </div>
+                <div class="form-group full">
+                    <div class="fee-total-paid" id="fee-total-paid" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft, rgba(32,56,224,.04))">
+                        <div>
+                            <div style="font-size:12px;color:var(--text-mute)">Total paid now</div>
+                            <div style="font-size:12px;color:var(--text-dim);margin-top:2px" id="fee-total-breakdown">Admission + Monthly fee</div>
+                        </div>
+                        <div style="font-size:20px;font-weight:800;color:var(--green,#22c55e)" id="fee-total-value">{{ currency_symbol() }}0.00</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,11 +226,22 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
     const startInput = document.getElementById('fee_start_date');
     const endInput = document.getElementById('fee_end_date');
     const paidInput = document.getElementById('fee_amount_paid');
+    const admissionInput = document.getElementById('admission_fee');
     const discountInput = document.getElementById('fee_discount');
     const balanceInput = document.getElementById('fee_balance');
     const discountHint = document.getElementById('fee-discount-hint');
     const hint = document.getElementById('fee-period-hint');
-    let syncing = false;
+    const totalValue = document.getElementById('fee-total-value');
+    const totalBreakdown = document.getElementById('fee-total-breakdown');
+    const currencySymbol = @json(currency_symbol());
+
+    function num(el) {
+        const v = parseFloat(el?.value || '');
+        return Number.isFinite(v) ? v : 0;
+    }
+
+    // Gross monthly before discount (so typing discount does not compound).
+    let grossMonthly = Math.max(0, num(paidInput) + num(discountInput));
 
     function addDays(dateStr, days) {
         if (!dateStr) return '';
@@ -227,51 +258,62 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
         return opt?.value ? Number(opt.dataset.price || 0) : 0;
     }
 
-    function num(el) {
-        const v = parseFloat(el?.value || '');
-        return Number.isFinite(v) ? v : 0;
+    function money(n) {
+        return currencySymbol + Number(n || 0).toFixed(2);
+    }
+
+    function applyDiscountToMonthly() {
+        if (!paidInput) return;
+        const discount = num(discountInput);
+        if (!grossMonthly && packagePrice()) {
+            grossMonthly = packagePrice();
+        }
+        if (!grossMonthly && num(paidInput)) {
+            grossMonthly = num(paidInput) + discount;
+        }
+        paidInput.value = Math.max(0, grossMonthly - discount).toFixed(2);
+        updateHint();
+    }
+
+    function updateTotalPaid() {
+        const admission = num(admissionInput);
+        const monthly = num(paidInput);
+        const discount = num(discountInput);
+        const balance = num(balanceInput);
+        // Discount is already subtracted into the Monthly fee field.
+        const monthlyNet = Math.max(0, monthly - balance);
+        const total = admission + monthlyNet;
+        if (totalValue) totalValue.textContent = money(total);
+        if (totalBreakdown) {
+            const parts = ['Admission ' + money(admission), 'Monthly fee ' + money(monthly)];
+            if (discount > 0) {
+                parts.unshift('Gross ' + money(grossMonthly || (monthly + discount)));
+                parts.push('(discount ' + money(discount) + ' applied)');
+            }
+            if (balance > 0) parts.push('− Balance ' + money(balance));
+            totalBreakdown.textContent = parts.join(' ');
+        }
     }
 
     function updateHint() {
         const price = packagePrice();
-        if (!discountHint || !price) return;
+        updateTotalPaid();
+        if (!discountHint) return;
         const paid = num(paidInput);
         const discount = num(discountInput);
         const balance = num(balanceInput);
+        if (!price) {
+            discountHint.textContent = 'Typing discount auto-reduces Monthly fee. Total = Admission + Monthly − Balance.';
+            return;
+        }
         const sum = paid + discount + balance;
         const ok = Math.abs(sum - price) < 0.01;
         discountHint.textContent =
-            'Package ' + price.toFixed(0)
-            + ' = paid ' + paid.toFixed(0)
+            'Discount reduces Monthly fee automatically. Package ' + price.toFixed(0)
+            + ' = monthly ' + paid.toFixed(0)
             + ' + discount ' + discount.toFixed(0)
             + ' + balance ' + balance.toFixed(0)
             + (ok ? '.' : ' (check: currently ' + sum.toFixed(0) + ').');
-    }
-
-    /** Keep discount & balance independent; paid fills the rest. */
-    function syncPaidFromDiscountBalance() {
-        if (syncing) return;
-        const price = packagePrice();
-        if (!price || !paidInput) return;
-        syncing = true;
-        const discount = num(discountInput);
-        const balance = num(balanceInput);
-        paidInput.value = Math.max(0, price - discount - balance).toFixed(2);
-        syncing = false;
-        updateHint();
-    }
-
-    /** When cash received changes, keep discount and put remainder into balance. */
-    function syncBalanceFromPaid() {
-        if (syncing) return;
-        const price = packagePrice();
-        if (!price || !balanceInput) return;
-        syncing = true;
-        const paid = num(paidInput);
-        const discount = num(discountInput);
-        balanceInput.value = Math.max(0, price - paid - discount).toFixed(2);
-        syncing = false;
-        updateHint();
     }
 
     function syncEndFromPlan() {
@@ -283,11 +325,14 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
                 && (discountInput?.value === '' || discountInput?.value === null)
                 && (balanceInput?.value === '' || balanceInput?.value === null);
             if (blank) {
-                paidInput.value = price.toFixed(2);
                 if (discountInput) discountInput.value = '0.00';
                 if (balanceInput) balanceInput.value = '0.00';
+                grossMonthly = price;
+                paidInput.value = price.toFixed(2);
             } else {
-                syncPaidFromDiscountBalance();
+                grossMonthly = price;
+                applyDiscountToMonthly();
+                return;
             }
         }
         updateHint();
@@ -299,9 +344,14 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
 
     planSelect?.addEventListener('change', syncEndFromPlan);
     startInput?.addEventListener('change', syncEndFromPlan);
-    paidInput?.addEventListener('input', syncBalanceFromPaid);
-    discountInput?.addEventListener('input', syncPaidFromDiscountBalance);
-    balanceInput?.addEventListener('input', syncPaidFromDiscountBalance);
+    admissionInput?.addEventListener('input', updateTotalPaid);
+    discountInput?.addEventListener('input', applyDiscountToMonthly);
+    paidInput?.addEventListener('input', () => {
+        // Manual monthly edit becomes the new gross base (+ current discount).
+        grossMonthly = num(paidInput) + num(discountInput);
+        updateHint();
+    });
+    balanceInput?.addEventListener('input', updateHint);
     updateHint();
 })();
 </script>

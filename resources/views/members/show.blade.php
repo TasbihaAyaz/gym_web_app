@@ -114,6 +114,13 @@
                             Amount paid: {{ money($sub->amount_paid) }}
                             @if((float) ($sub->balance_due ?? 0) > 0)
                                 · Balance due: <strong style="color:#f87171">{{ money($sub->balance_due) }}</strong>
+                                @perm('payments.create')
+                                <a
+                                    href="{{ route('payments.create', ['member_id' => $member->id, 'amount' => number_format((float) $sub->balance_due, 2, '.', ''), 'collect_balance' => 1]) }}"
+                                    class="link"
+                                    style="margin-left:6px"
+                                >Collect balance</a>
+                                @endperm
                             @endif
                         </div>
                     </div>
@@ -168,7 +175,15 @@
                     <tr>
                         <td>{{ $payment->payment_date?->format('M d, Y') ?? '—' }}</td>
                         <td><span class="code-pill">{{ $payment->payment_number }}</span></td>
-                        <td style="font-weight:600">{{ $payment->plan?->name ?: '—' }}</td>
+                        <td style="font-weight:600">
+                            @if($payment->plan?->name)
+                                {{ $payment->plan->name }}
+                            @elseif(str_starts_with((string) $payment->reference, 'ADM-MEMBER-') || str_starts_with((string) $payment->notes, 'Admission fee'))
+                                Admission fee
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td>
                             @if($payment->fee_start_date && $payment->fee_end_date)
                                 {{ $payment->fee_start_date->format('M d, Y') }}

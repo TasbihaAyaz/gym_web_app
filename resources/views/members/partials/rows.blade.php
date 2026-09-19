@@ -3,6 +3,7 @@
         $sub = $member->activeSubscription;
         $expired = $sub && $sub->end_date->toDateString() < now()->toDateString();
         $expiring = $sub && ! $expired && $sub->end_date->toDateString() <= now()->addDays(7)->toDateString();
+        $balanceDue = round((float) ($sub?->balance_due ?? 0), 2);
     @endphp
     <tr>
         <td>
@@ -38,6 +39,21 @@
                 <span class="status-badge leave">expiring</span>
             @else
                 <span class="status-badge active">valid</span>
+            @endif
+        </td>
+        <td>
+            @if($balanceDue > 0)
+                <div style="font-weight:700;color:#f87171">{{ money($balanceDue) }}</div>
+                @perm('payments.create')
+                <a
+                    href="{{ route('payments.create', ['member_id' => $member->id, 'amount' => number_format($balanceDue, 2, '.', ''), 'collect_balance' => 1]) }}"
+                    class="link"
+                    style="font-size:11.5px"
+                    title="Collect balance from member"
+                >Collect balance</a>
+                @endperm
+            @else
+                <span style="color:var(--text-mute)">—</span>
             @endif
         </td>
         <td><span class="status-badge {{ $member->status }}">{{ $member->status }}</span></td>
