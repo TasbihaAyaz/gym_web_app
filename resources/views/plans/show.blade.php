@@ -9,7 +9,9 @@
         <p>Plan details · {{ $plan->subscriptions_count }} subscriptions</p>
     </div>
     <div class="toolbar-actions">
+        @perm('plans.edit')
         <a href="{{ route('plans.edit', $plan) }}" class="btn btn-primary">Edit</a>
+        @endperm
         <a href="{{ route('plans.index') }}" class="btn btn-secondary">Back</a>
     </div>
 </div>

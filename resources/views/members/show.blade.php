@@ -9,8 +9,12 @@
         <p>Member profile · <span class="code-pill">{{ $member->member_code }}</span></p>
     </div>
     <div class="toolbar-actions">
+        @perm('payments.create')
         <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="btn btn-primary">Collect Fee</a>
+        @endperm
+        @perm('members.edit')
         <a href="{{ route('members.edit', $member) }}" class="btn btn-secondary">Edit</a>
+        @endperm
         <a href="{{ route('members.index') }}" class="btn btn-ghost">Back</a>
     </div>
 </div>
@@ -139,7 +143,9 @@
             <h3 style="margin:0;font-size:15px">Complete Fee History</h3>
             <p style="margin:4px 0 0;font-size:12.5px;color:var(--text-dim)">All fee payments recorded for this member</p>
         </div>
+        @perm('payments.create')
         <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="btn btn-secondary btn-sm">Collect Fee</a>
+        @endperm
     </div>
     <div class="table-wrap">
         <table class="data-table">
@@ -187,7 +193,9 @@
                     <tr>
                         <td colspan="10" style="text-align:center;padding:28px;color:var(--text-dim)">
                             No fee payments yet.
+                            @perm('payments.create')
                             <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="link" style="margin-left:6px">Collect first fee</a>
+                            @endperm
                         </td>
                     </tr>
                 @endforelse

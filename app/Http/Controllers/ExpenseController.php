@@ -49,7 +49,7 @@ class ExpenseController extends Controller
 
     public function export(Request $request)
     {
-        abort_unless(auth()->user()?->canExportExpenses(), 403, 'Only Admin or Manager can export expenses.');
+        abort_unless(auth()->user()?->canExportExpenses(), 403, 'You do not have permission to export expenses.');
 
         $expenses = $this->filteredQuery($request)
             ->with(['account', 'recorder'])

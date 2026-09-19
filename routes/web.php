@@ -58,45 +58,75 @@ Route::post('logout', [AuthController::class, 'logout'])
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    /* Management */
-    Route::get('members/export-pending-fees', [MemberController::class, 'exportPendingFees'])->name('members.export-pending-fees');
-    Route::get('members/pending-fees', [MemberController::class, 'pendingFees'])->name('members.pending-fees');
-    Route::resource('members', MemberController::class);
-    Route::resource('trainers', TrainerController::class);
-    Route::resource('classes', GymClassController::class)->parameters(['classes' => 'gym_class']);
-    Route::resource('plans', MembershipPlanController::class);
+    Route::middleware('module:members')->group(function () {
+        Route::get('members/export-pending-fees', [MemberController::class, 'exportPendingFees'])->name('members.export-pending-fees');
+        Route::get('members/pending-fees', [MemberController::class, 'pendingFees'])->name('members.pending-fees');
+        Route::resource('members', MemberController::class);
+    });
 
-    /* Finance — fee collection only (invoices removed from product surface) */
-    Route::get('payments/member-context/{member}', [PaymentController::class, 'memberContext'])
-        ->name('payments.member-context');
-    Route::resource('payments', PaymentController::class);
-    Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
-    Route::post('expenses/categories', [ExpenseController::class, 'storeCategory'])->name('expenses.categories.store');
-    Route::put('expenses/categories/{expenseCategory}', [ExpenseController::class, 'updateCategory'])->name('expenses.categories.update');
-    Route::delete('expenses/categories/{expenseCategory}', [ExpenseController::class, 'destroyCategory'])->name('expenses.categories.destroy');
-    Route::resource('expenses', ExpenseController::class);
-    Route::resource('accounts', AccountController::class);
+    Route::middleware('module:trainers')->group(function () {
+        Route::resource('trainers', TrainerController::class);
+    });
 
-    /* Operations */
-    Route::resource('attendance', AttendanceController::class);
-    Route::get('biometric-device', [ZktecoDeviceController::class, 'index'])->name('zkteco.index');
-    Route::post('biometric-device/connect', [ZktecoDeviceController::class, 'connect'])->name('zkteco.connect');
-    Route::post('biometric-device/live-sync', [ZktecoDeviceController::class, 'liveSync'])->name('zkteco.live-sync');
-    Route::get('biometric-device/status', [ZktecoDeviceController::class, 'deviceStatus'])->name('zkteco.status');
-    Route::post('biometric-device/{device}/sync', [ZktecoDeviceController::class, 'sync'])->name('zkteco.sync');
+    Route::middleware('module:classes')->group(function () {
+        Route::resource('classes', GymClassController::class)->parameters(['classes' => 'gym_class']);
+    });
+
+    Route::middleware('module:plans')->group(function () {
+        Route::resource('plans', MembershipPlanController::class);
+    });
+
+    Route::middleware('module:payments')->group(function () {
+        Route::get('payments/member-context/{member}', [PaymentController::class, 'memberContext'])
+            ->name('payments.member-context');
+        Route::resource('payments', PaymentController::class);
+    });
+
+    Route::middleware('module:expenses')->group(function () {
+        Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
+        Route::post('expenses/categories', [ExpenseController::class, 'storeCategory'])->name('expenses.categories.store');
+        Route::put('expenses/categories/{expenseCategory}', [ExpenseController::class, 'updateCategory'])->name('expenses.categories.update');
+        Route::delete('expenses/categories/{expenseCategory}', [ExpenseController::class, 'destroyCategory'])->name('expenses.categories.destroy');
+        Route::resource('expenses', ExpenseController::class);
+    });
+
+    Route::middleware('module:accounts')->group(function () {
+        Route::resource('accounts', AccountController::class);
+    });
+
+    Route::middleware('module:attendance')->group(function () {
+        Route::resource('attendance', AttendanceController::class);
+    });
+
     Route::get('biometric-device/welcome', [ZktecoDeviceController::class, 'welcome'])->name('zkteco.welcome');
     Route::get('biometric-device/poll-checkin', [ZktecoDeviceController::class, 'pollCheckin'])->name('zkteco.poll-checkin');
-    Route::put('biometric-device/{device}', [ZktecoDeviceController::class, 'update'])->name('zkteco.update');
-    Route::delete('biometric-device/{device}', [ZktecoDeviceController::class, 'destroy'])->name('zkteco.destroy');
+
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('biometric-device', [ZktecoDeviceController::class, 'index'])->name('zkteco.index');
+        Route::post('biometric-device/connect', [ZktecoDeviceController::class, 'connect'])->name('zkteco.connect');
+        Route::post('biometric-device/live-sync', [ZktecoDeviceController::class, 'liveSync'])->name('zkteco.live-sync');
+        Route::get('biometric-device/status', [ZktecoDeviceController::class, 'deviceStatus'])->name('zkteco.status');
+        Route::post('biometric-device/{device}/sync', [ZktecoDeviceController::class, 'sync'])->name('zkteco.sync');
+        Route::put('biometric-device/{device}', [ZktecoDeviceController::class, 'update'])->name('zkteco.update');
+        Route::delete('biometric-device/{device}', [ZktecoDeviceController::class, 'destroy'])->name('zkteco.destroy');
+    });
+
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
 
-    /* Settings */
     Route::post('push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push.store');
     Route::delete('push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.destroy');
 
-    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
-    Route::resource('users', UserController::class);
-    Route::resource('roles', RoleController::class);
+    Route::middleware('module:settings')->group(function () {
+        Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    });
+
+    Route::middleware('module:users')->group(function () {
+        Route::resource('users', UserController::class);
+    });
+
+    Route::middleware('module:roles')->group(function () {
+        Route::resource('roles', RoleController::class);
+    });
 });

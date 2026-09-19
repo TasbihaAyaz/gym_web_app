@@ -9,7 +9,9 @@
         <p>Payment details · <span class="status-badge {{ $payment->status }}">{{ $payment->status }}</span></p>
     </div>
     <div class="toolbar-actions">
+        @perm('payments.edit')
         <a href="{{ route('payments.edit', $payment) }}" class="btn btn-primary">Edit</a>
+        @endperm
         <a href="{{ route('payments.index') }}" class="btn btn-secondary">Back</a>
     </div>
 </div>

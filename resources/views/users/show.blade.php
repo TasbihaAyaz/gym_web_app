@@ -9,8 +9,12 @@
         <p>Staff account · {{ $user->email }}</p>
     </div>
     <div class="toolbar-actions">
+        @perm('users.edit')
         <a href="{{ route('users.edit', $user) }}" class="btn btn-primary">Edit</a>
+        @endperm
+        @perm('users.view')
         <a href="{{ route('users.index') }}" class="btn btn-secondary">Back</a>
+        @endperm
     </div>
 </div>
 

@@ -27,10 +27,12 @@
                 Export
             </button>
         </form>
+        @perm('members.create')
         <a href="{{ route('members.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Add Member
         </a>
+        @endperm
     </div>
 </div>
 
@@ -159,7 +161,9 @@
             <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
             <h3>No members found</h3>
             <p>Add your first member or adjust the filters.</p>
+            @perm('members.create')
             <a href="{{ route('members.create') }}" class="btn btn-primary">Add Member</a>
+            @endperm
         </div>
     @endif
 </div>

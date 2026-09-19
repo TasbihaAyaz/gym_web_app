@@ -2,11 +2,18 @@
     $currentUser = auth()->user();
 @endphp
 <header class="topbar">
+  @perm('members.view')
   <form method="GET" action="{{ route('members.index') }}" class="search-box" id="top-search-form">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search members..." />
     <span class="kbd">Ctrl + K</span>
   </form>
+  @else
+  <div class="search-box" style="opacity:.6;pointer-events:none">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search unavailable" disabled />
+  </div>
+  @endperm
   <div class="topbar-right">
     <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle light / dark theme" aria-label="Toggle theme">
       <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
@@ -18,9 +25,11 @@
       </svg>
     </button>
 
+    @perm('payments.create')
     <a href="{{ route('payments.create') }}" class="icon-btn" title="Collect fee payment">
       <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
     </a>
+    @endperm
 
     <div class="profile-menu dropdown">
       <button type="button" class="profile profile-trigger" data-dropdown-toggle aria-haspopup="true" aria-expanded="false">
@@ -38,7 +47,9 @@
       <div class="dropdown-menu profile-dropdown">
         @if($currentUser)
           <a href="{{ route('users.show', $currentUser) }}">My Profile</a>
+          @perm('settings.view')
           <a href="{{ route('settings.index') }}">Settings</a>
+          @endperm
         @endif
         <form method="POST" action="{{ route('logout') }}" class="logout-form">
           @csrf

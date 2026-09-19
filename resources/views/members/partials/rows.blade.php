@@ -46,15 +46,19 @@
                 <a href="{{ route('members.show', $member) }}" class="btn-icon" title="View">
                     <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>
+                @perm('members.edit')
                 <a href="{{ route('members.edit', $member) }}" class="btn-icon" title="Edit">
                     <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 </a>
+                @endperm
+                @perm('members.delete')
                 <form action="{{ route('members.destroy', $member) }}" method="POST" onsubmit="return confirm('Delete this member?')">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn-icon danger" title="Delete">
                         <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
                     </button>
                 </form>
+                @endperm
             </div>
         </td>
     </tr>

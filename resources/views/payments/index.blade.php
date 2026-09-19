@@ -9,10 +9,12 @@
         <p>Membership fees collected from members</p>
     </div>
     <div class="toolbar-actions">
+        @perm('payments.create')
         <a href="{{ route('payments.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Collect Fee
         </a>
+        @endperm
     </div>
 </div>
 
@@ -79,15 +81,19 @@
                                     <a href="{{ route('payments.show', $payment) }}" class="btn-icon" title="View">
                                         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
+                                    @perm('payments.edit')
                                     <a href="{{ route('payments.edit', $payment) }}" class="btn-icon" title="Edit">
                                         <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                     </a>
+                                    @endperm
+                                    @perm('payments.delete')
                                     <form action="{{ route('payments.destroy', $payment) }}" method="POST" onsubmit="return confirm('Delete this payment?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="btn-icon danger" title="Delete">
                                             <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
                                         </button>
                                     </form>
+                                    @endperm
                                 </div>
                             </td>
                         </tr>
@@ -101,7 +107,9 @@
             <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></div>
             <h3>No payments found</h3>
             <p>Collect a membership fee payment from a member.</p>
+            @perm('payments.create')
             <a href="{{ route('payments.create') }}" class="btn btn-primary">Collect Fee</a>
+            @endperm
         </div>
     @endif
 </div>

@@ -9,7 +9,9 @@
         <p>{{ $attendance->attendance_date?->format('l, M d, Y') }}</p>
     </div>
     <div class="toolbar-actions">
+        @perm('attendance.edit')
         <a href="{{ route('attendance.edit', $attendance) }}" class="btn btn-primary">Edit</a>
+        @endperm
         <a href="{{ route('attendance.index') }}" class="btn btn-secondary">Back</a>
     </div>
 </div>
