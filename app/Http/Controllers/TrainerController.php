@@ -63,7 +63,12 @@ class TrainerController extends Controller
 
     public function show(Trainer $trainer): View
     {
-        $trainer->load('gymClasses');
+        $trainer->load([
+            'gymClasses',
+            'members' => fn ($q) => $q->with('activeSubscription.plan')
+                ->orderBy('first_name')
+                ->orderBy('last_name'),
+        ]);
 
         return view('trainers.show', compact('trainer'));
     }

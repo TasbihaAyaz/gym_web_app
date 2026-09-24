@@ -108,6 +108,7 @@
             </div>
         </div>
 
+        @unless($isEdit)
         @php
             $plans = $plans ?? collect();
             $subscription = $subscription ?? ($member->activeSubscription ?? null);
@@ -205,6 +206,7 @@
                 </div>
             </div>
         </div>
+        @endunless
 
         <div class="form-actions">
             <a href="{{ route('members.index') }}" class="btn btn-ghost">Cancel</a>
@@ -221,6 +223,7 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
     box.innerHTML = '<img src="' + url + '" alt="Preview">';
 });
 
+@unless($isEdit)
 (function () {
     const planSelect = document.getElementById('membership_plan_id');
     const startInput = document.getElementById('fee_start_date');
@@ -354,4 +357,5 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
     balanceInput?.addEventListener('input', updateHint);
     updateHint();
 })();
+@endunless
 </script>

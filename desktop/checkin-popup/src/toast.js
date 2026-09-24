@@ -31,12 +31,21 @@ function money(n) {
   return 'Rs ' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
+function feePeriodDate(fee) {
+  const start = fee?.start;
+  const end = fee?.end;
+  if (!start || !end || start === '—' || end === '—') return '';
+  return `${start} → ${end}`;
+}
+
 function feeNote(fee) {
   if (!fee || fee.status === 'none') return 'No package / fee on file.';
   if (fee.status === 'expired') return 'Fee expired — renewal pending.';
   if (fee.status === 'expiring') return 'Fee expiring soon — please renew.';
   if ((fee.pending || 0) > 0) return `Outstanding balance ${money(fee.pending)}.`;
-  return 'Fee is currently active.';
+  // Active with no dates on the row — still show Fee Period (white via CSS class)
+  if (!feePeriodDate(fee)) return 'Fee Period';
+  return '';
 }
 
 function packageLabel(fee) {
@@ -128,11 +137,25 @@ function fill(punch) {
   els.pkg.textContent = packageLabel(fee);
   els.feeChip.textContent = fee.label || '—';
 
-  // Hide full package price / validity days range
-  if (els.feeRangeRow) els.feeRangeRow.hidden = true;
-
+  const period = feePeriodDate(fee);
   const pending = Number(fee.pending || 0);
   const paid = Number(fee.amount_paid || 0);
+  const isActive = status === 'active' && pending <= 0;
+
+  // Active members: show Fee Period dates in white (replaces "Fee is currently active.")
+  if (els.feeRangeRow && els.feeRange) {
+    if (isActive && period) {
+      els.feeRangeRow.hidden = false;
+      els.feeRange.textContent = period;
+    } else if (period && status !== 'none') {
+      els.feeRangeRow.hidden = false;
+      els.feeRange.textContent = period;
+    } else {
+      els.feeRangeRow.hidden = true;
+      els.feeRange.textContent = '—';
+    }
+  }
+
   if (status === 'expired' || pending > 0) {
     els.pendingRow.hidden = false;
     els.pending.textContent = pending > 0
@@ -143,6 +166,7 @@ function fill(punch) {
   }
 
   els.note.textContent = feeNote(fee);
+  els.note.classList.toggle('is-fee-period', isActive && !period);
 }
 
 async function hideToast() {

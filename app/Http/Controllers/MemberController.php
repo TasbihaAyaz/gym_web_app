@@ -14,7 +14,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -313,7 +312,6 @@ class MemberController extends Controller
     public function update(Request $request, Member $member, ZktecoUserSyncService $zkUsers): RedirectResponse
     {
         $data = $this->validated($request, $member);
-        $fee = $this->feeData($data);
         unset(
             $data['avatar'],
             $data['remove_avatar'],
@@ -334,11 +332,8 @@ class MemberController extends Controller
             $data['avatar'] = $this->storeImage($request, 'avatar', 'members', $member);
         }
 
-        DB::transaction(function () use ($member, $data, $fee) {
-            $member->update($data);
-            $this->syncSubscription($member, $fee);
-            $this->syncAdmissionFee($member, $fee);
-        });
+        // Profile-only update: never touch payments, accounts, or fee period.
+        $member->update($data);
 
         // Keep device name in sync when member details change
         if ($member->device_user_id) {
@@ -346,17 +341,6 @@ class MemberController extends Controller
         }
 
         return redirect()->route('members.index')->with('success', 'Member updated successfully.');
-    }
-
-    public function destroy(Member $member): RedirectResponse
-    {
-        if ($member->avatar && ! str_starts_with($member->avatar, 'http')) {
-            Storage::disk('public')->delete($member->avatar);
-        }
-
-        $member->delete();
-
-        return redirect()->route('members.index')->with('success', 'Member deleted successfully.');
     }
 
     private function validated(Request $request, ?Member $member = null): array
