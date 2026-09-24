@@ -13,6 +13,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
 
+    /** @var array<int, string>|null */
+    protected ?array $permissionSlugCache = null;
+
     protected $fillable = [
         'name',
         'email',
@@ -54,7 +57,31 @@ class User extends Authenticatable
 
     public function hasPermission(string $slug): bool
     {
-        return $this->role?->permissions()->where('slug', $slug)->exists() ?? false;
+        if ($this->status === 'inactive') {
+            return false;
+        }
+
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (! $this->role?->is_active) {
+            return false;
+        }
+
+        return in_array($slug, $this->permissionSlugs(), true);
+    }
+
+    /** @return array<int, string> */
+    public function permissionSlugs(): array
+    {
+        if ($this->permissionSlugCache !== null) {
+            return $this->permissionSlugCache;
+        }
+
+        $this->loadMissing('role.permissions');
+
+        return $this->permissionSlugCache = $this->role?->permissions->pluck('slug')->all() ?? [];
     }
 
     public function isAdmin(): bool
@@ -67,8 +94,62 @@ class User extends Authenticatable
         return $this->role?->slug === 'manager';
     }
 
+    public function isReceptionist(): bool
+    {
+        return $this->role?->slug === 'receptionist';
+    }
+
     public function canExportExpenses(): bool
     {
-        return in_array($this->role?->slug, ['admin', 'manager'], true);
+        return $this->hasPermission('expenses.view');
+    }
+
+    public function canManageBiometric(): bool
+    {
+        return $this->isAdmin() || $this->isManager();
+    }
+
+    public function canAccessReports(): bool
+    {
+        return $this->allowedReportTabs() !== [];
+    }
+
+    public function canViewFinancialReports(): bool
+    {
+        if ($this->isAdmin() || $this->isManager()) {
+            return true;
+        }
+
+        return $this->hasPermission('reports.view')
+            && ($this->hasPermission('expenses.view') || $this->hasPermission('accounts.view'));
+    }
+
+    public function canViewReport(string $report): bool
+    {
+        return match ($report) {
+            'overview', 'earnings', 'expenses' => $this->canViewFinancialReports(),
+            'members', 'active', 'pending_fees' => $this->hasPermission('members.view')
+                || $this->hasPermission('reports.view'),
+            default => false,
+        };
+    }
+
+    /** @return array<string, string> */
+    public function allowedReportTabs(): array
+    {
+        $catalog = [
+            'overview' => 'Overview',
+            'earnings' => 'Sales / Earnings',
+            'members' => 'Members',
+            'active' => 'Active Members',
+            'pending_fees' => 'Fee Pending',
+            'expenses' => 'Expenses Detail',
+        ];
+
+        return array_filter(
+            $catalog,
+            fn (string $key) => $this->canViewReport($key),
+            ARRAY_FILTER_USE_KEY
+        );
     }
 }

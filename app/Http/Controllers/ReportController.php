@@ -23,12 +23,13 @@ class ReportController extends Controller
     {
         [$from, $to] = $this->dateRange($request);
         $report = $this->reportType($request);
+        $tabs = $this->tabs();
 
         $base = [
             'from' => $from->toDateString(),
             'to' => $to->toDateString(),
             'report' => $report,
-            'reportTabs' => $this->tabs(),
+            'reportTabs' => $tabs,
         ];
 
         return match ($report) {
@@ -57,21 +58,23 @@ class ReportController extends Controller
 
     private function tabs(): array
     {
-        return [
-            'overview' => 'Overview',
-            'earnings' => 'Sales / Earnings',
-            'members' => 'Members',
-            'active' => 'Active Members',
-            'pending_fees' => 'Fee Pending',
-            'expenses' => 'Expenses Detail',
-        ];
+        return auth()->user()?->allowedReportTabs() ?? [];
     }
 
     private function reportType(Request $request): string
     {
-        $report = (string) $request->get('report', 'overview');
+        $tabs = $this->tabs();
+        abort_if($tabs === [], 403, 'You do not have permission to view reports.');
 
-        return array_key_exists($report, $this->tabs()) ? $report : 'overview';
+        $requested = (string) $request->get('report', array_key_first($tabs));
+
+        abort_unless(
+            array_key_exists($requested, $tabs),
+            403,
+            'You do not have permission to view this report.'
+        );
+
+        return $requested;
     }
 
     /** @return array{0:Carbon,1:Carbon} */
@@ -374,6 +377,8 @@ class ReportController extends Controller
             $member = $payment->member;
             $joined = $member?->joined_at?->toDateString();
             $payDate = $payment->payment_date?->toDateString();
+            $isAdmission = str_starts_with((string) $payment->reference, 'ADM-MEMBER-')
+                || str_starts_with((string) $payment->notes, 'Admission fee');
             $isNew = $joined && $payDate && $joined === $payDate;
 
             $details = [];
@@ -392,7 +397,9 @@ class ReportController extends Controller
                 'sort_date' => $payment->payment_date?->toDateString(),
                 'sort_id' => $payment->id,
                 'date' => $payment->payment_date,
-                'type' => $isNew ? 'New Member' : ($payment->plan?->name ? 'Fee Renewal' : 'Fee Payment'),
+                'type' => $isAdmission
+                    ? 'Admission Fee'
+                    : ($isNew ? 'New Member' : ($payment->plan?->name ? 'Fee Renewal' : 'Fee Payment')),
                 'type_class' => 'active',
                 'voucher' => $payment->payment_number,
                 'account_label' => $member

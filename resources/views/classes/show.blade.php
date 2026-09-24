@@ -9,7 +9,9 @@
         <p>Class details and enrollments</p>
     </div>
     <div class="toolbar-actions">
+        @perm('classes.edit')
         <a href="{{ route('classes.edit', $class) }}" class="btn btn-primary">Edit</a>
+        @endperm
         <a href="{{ route('classes.index') }}" class="btn btn-secondary">Back</a>
     </div>
 </div>

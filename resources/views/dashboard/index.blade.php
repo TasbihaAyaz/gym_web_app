@@ -48,10 +48,18 @@
                         Shortcuts
                     </button>
                     <div class="dropdown-menu">
+                        @perm('members.view')
                         <a href="{{ route('members.index', ['status' => 'active']) }}">Active Members</a>
+                        @endperm
+                        @perm('payments.view')
                         <a href="{{ route('payments.index') }}">Fee Payments</a>
+                        @endperm
+                        @perm('attendance.view')
                         <a href="{{ route('attendance.index') }}">Today's Attendance</a>
+                        @endperm
+                        @if(auth()->user()?->canAccessReports())
                         <a href="{{ route('reports.index') }}">Full Reports</a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -222,7 +230,7 @@
                     <span class="tag {{ $tier }}">{{ ucfirst($tier) }}</span>
                 </a>
             @empty
-                <p class="empty-inline">No members yet. <a href="{{ route('members.create') }}">Add one</a></p>
+                <p class="empty-inline">No members yet.@perm('members.create') <a href="{{ route('members.create') }}">Add one</a>@endperm</p>
             @endforelse
         </div>
         <a class="ghost-btn" href="{{ route('members.index') }}">View All Enrollments</a>
@@ -233,10 +241,12 @@
     <div class="card classes-card">
         <div class="card-head">
             <h3>Trainer Performance</h3>
+            @perm('trainers.view')
             <a class="link" href="{{ route('trainers.index') }}">View All</a>
+            @endperm
         </div>
         @if($stats['trainer_load']->isEmpty())
-            <p class="empty-inline">No trainers yet. <a href="{{ route('trainers.create') }}">Add one</a></p>
+            <p class="empty-inline">No trainers yet.@perm('trainers.create') <a href="{{ route('trainers.create') }}">Add one</a>@endperm</p>
         @else
             <div class="chart-wrap tall"><canvas id="trainerChart"></canvas></div>
         @endif
@@ -245,7 +255,9 @@
     <div class="card payments-card">
         <div class="card-head">
             <h3>Pending Fee Collection</h3>
+            @perm('payments.create')
             <a class="link" href="{{ route('payments.create') }}">Collect Fee</a>
+            @endperm
         </div>
         <div class="people-list">
             @forelse($stats['pending_fees'] as $member)
@@ -287,26 +299,36 @@
         <p>Jump into the most common gym tasks</p>
     </div>
     <div class="qa-buttons">
+        @perm('members.create')
         <a href="{{ route('members.create') }}" class="qa-btn">
             <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
             Add Member
         </a>
+        @endperm
+        @perm('payments.create')
         <a href="{{ route('payments.create') }}" class="qa-btn">
             <span class="qa-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></span>
             Collect Fee
         </a>
+        @endperm
+        @perm('expenses.create')
         <a href="{{ route('expenses.create') }}" class="qa-btn">
             <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></span>
             Add Expense
         </a>
+        @endperm
+        @perm('classes.create')
         <a href="{{ route('classes.create') }}" class="qa-btn">
             <span class="qa-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></span>
             Schedule Class
         </a>
+        @endperm
+        @if(auth()->user()?->canAccessReports())
         <a href="{{ route('reports.index') }}" class="qa-btn">
             <span class="qa-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></span>
             View Reports
         </a>
+        @endif
     </div>
 </section>
 @endsection

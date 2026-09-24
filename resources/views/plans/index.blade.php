@@ -9,10 +9,12 @@
         <p>Membership tiers, pricing, and package features</p>
     </div>
     <div class="toolbar-actions">
+        @perm('plans.create')
         <a href="{{ route('plans.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Add Plan
         </a>
+        @endperm
     </div>
 </div>
 
@@ -71,11 +73,15 @@
                 </div>
                 <div class="plan-card-actions">
                     <a href="{{ route('plans.show', $plan) }}" class="btn btn-secondary btn-sm" style="flex:1">View</a>
+                    @perm('plans.edit')
                     <a href="{{ route('plans.edit', $plan) }}" class="btn btn-primary btn-sm" style="flex:1">Edit</a>
+                    @endperm
+                    @perm('plans.delete')
                     <form action="{{ route('plans.destroy', $plan) }}" method="POST" onsubmit="return confirm('Delete this plan?')">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
+                    @endperm
                 </div>
             </div>
         @endforeach
@@ -89,7 +95,9 @@
             <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
             <h3>No plans found</h3>
             <p>Create membership packages for your members.</p>
+            @perm('plans.create')
             <a href="{{ route('plans.create') }}" class="btn btn-primary">Add Plan</a>
+            @endperm
         </div>
     </div>
 @endif

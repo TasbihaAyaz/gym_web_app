@@ -124,6 +124,7 @@ class PaymentController extends Controller
                     'start_label' => optional($sub->start_date)?->format('M d, Y'),
                     'end_label' => optional($sub->end_date)?->format('M d, Y'),
                     'amount_paid' => (float) $sub->amount_paid,
+                    'balance_due' => (float) ($sub->balance_due ?? 0),
                     'status' => $sub->status,
                     'fee_status' => $feeStatus,
                     'days_left' => $daysLeft,
@@ -160,11 +161,51 @@ class PaymentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $collectBalance = $request->boolean('collect_balance');
 
-        DB::transaction(function () use ($data, $request) {
+        DB::transaction(function () use ($data, $collectBalance) {
             $member = Member::findOrFail($data['member_id']);
             $plan = MembershipPlan::findOrFail($data['membership_plan_id']);
-            $applyDiscount = $request->boolean('apply_package_discount', true);
+            $cashAmount = (float) $data['amount'];
+
+            if ($collectBalance) {
+                $sub = $member->activeSubscription;
+                $due = round((float) ($sub?->balance_due ?? 0), 2);
+                $paidTowardBalance = min($cashAmount, max(0, $due));
+                $remaining = max(0, round($due - $paidTowardBalance, 2));
+
+                $payment = Payment::create([
+                    'payment_number' => $this->generateNumber(),
+                    'invoice_id' => null,
+                    'member_id' => $member->id,
+                    'membership_plan_id' => $plan->id,
+                    'account_id' => $data['account_id'] ?? null,
+                    'amount' => $cashAmount,
+                    'discount' => 0,
+                    'balance' => $remaining,
+                    'method' => $data['method'],
+                    'payment_date' => $data['payment_date'],
+                    'fee_start_date' => $sub?->start_date?->toDateString() ?? ($data['fee_start_date'] ?? null),
+                    'fee_end_date' => $sub?->end_date?->toDateString() ?? ($data['fee_end_date'] ?? null),
+                    'reference' => $data['reference'] ?? null,
+                    'status' => $data['status'],
+                    'notes' => $data['notes'] ?? 'Balance collection',
+                    'received_by' => auth()->id(),
+                ]);
+
+                if ($sub) {
+                    $sub->update([
+                        'amount_paid' => round((float) $sub->amount_paid + $paidTowardBalance, 2),
+                        'balance_due' => $remaining,
+                    ]);
+                }
+
+                if ($payment->status === 'completed') {
+                    $this->adjustAccountBalance($payment->account_id, $cashAmount);
+                }
+
+                return;
+            }
 
             $payment = Payment::create([
                 'payment_number' => $this->generateNumber(),
@@ -174,6 +215,7 @@ class PaymentController extends Controller
                 'account_id' => $data['account_id'] ?? null,
                 'amount' => $data['amount'],
                 'discount' => 0,
+                'balance' => (float) ($data['balance'] ?? 0),
                 'method' => $data['method'],
                 'payment_date' => $data['payment_date'],
                 'fee_start_date' => $data['fee_start_date'] ?? null,
@@ -184,25 +226,31 @@ class PaymentController extends Controller
                 'received_by' => auth()->id(),
             ]);
 
+            // Always sync package period + balance_due so Members list shows outstanding balance.
+            // Cash/account is only updated when payment is completed.
+            $this->membershipPayments->applyPackageToPayment(
+                $payment,
+                $member,
+                $plan,
+                $data['fee_start_date'] ?? null,
+                $data['fee_end_date'] ?? null,
+                false,
+                0.0,
+                'active',
+                array_key_exists('balance', $data) && $data['balance'] !== null && $data['balance'] !== ''
+                    ? (float) $data['balance']
+                    : 0.0,
+            );
+
             if ($payment->status === 'completed') {
-                $this->membershipPayments->applyPackageToPayment(
-                    $payment,
-                    $member,
-                    $plan,
-                    $data['fee_start_date'] ?? null,
-                    $data['fee_end_date'] ?? null,
-                    $applyDiscount,
-                );
                 $this->adjustAccountBalance($payment->account_id, (float) $payment->amount);
-            } else {
-                $payment->update([
-                    'fee_start_date' => $data['fee_start_date'] ?? null,
-                    'fee_end_date' => $data['fee_end_date'] ?? null,
-                ]);
             }
         });
 
-        return redirect()->route('payments.index')->with('success', 'Fee payment recorded successfully.');
+        return redirect()->route('payments.index')->with(
+            'success',
+            $collectBalance ? 'Balance payment recorded successfully.' : 'Fee payment recorded successfully.'
+        );
     }
 
     public function show(Payment $payment): View
@@ -283,9 +331,10 @@ class PaymentController extends Controller
             'membership_plan_id' => [$editing ? 'nullable' : 'required', 'exists:membership_plans,id'],
             'fee_start_date' => ['nullable', 'required_with:membership_plan_id', 'date'],
             'fee_end_date' => ['nullable', 'required_with:membership_plan_id', 'date', 'after_or_equal:fee_start_date'],
-            'apply_package_discount' => ['nullable', 'boolean'],
             'account_id' => ['nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'balance' => ['nullable', 'numeric', 'min:0'],
+            'collect_balance' => ['nullable', 'boolean'],
             'method' => ['required', 'in:cash,card,bank_transfer,online,other'],
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:100'],

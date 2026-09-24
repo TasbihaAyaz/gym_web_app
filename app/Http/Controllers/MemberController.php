@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\HandlesImageUpload;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Models\Setting;
 use App\Models\Trainer;
 use App\Services\MembershipPaymentService;
 use App\Services\ZktecoUserSyncService;
@@ -56,6 +57,8 @@ class MemberController extends Controller
                 });
             } elseif ($fee === 'expired') {
                 $query->whereHas('activeSubscription', fn ($q) => $q->whereDate('end_date', '<', now()->toDateString()));
+            } elseif ($fee === 'balance') {
+                $query->whereHas('activeSubscription', fn ($q) => $q->where('balance_due', '>', 0));
             }
         }
 
@@ -74,7 +77,7 @@ class MemberController extends Controller
             'total' => Member::count(),
             'active' => Member::where('status', 'active')->count(),
             'pending' => Member::where('status', 'pending')->count(),
-            'cancelled' => Member::where('status', 'cancelled')->count(),
+            'balance_due' => Member::whereHas('activeSubscription', fn ($q) => $q->where('balance_due', '>', 0))->count(),
         ];
 
         return view('members.index', compact('members', 'stats'));
@@ -207,6 +210,7 @@ class MemberController extends Controller
             'plans' => $this->activePackages(),
             'subscription' => null,
             'trainers' => $this->activeTrainers(),
+            'defaultAdmissionFee' => $this->defaultAdmissionFee(),
         ]);
     }
 
@@ -214,7 +218,19 @@ class MemberController extends Controller
     {
         $data = $this->validated($request);
         $fee = $this->feeData($data);
-        unset($data['avatar'], $data['remove_avatar'], $data['membership_plan_id'], $data['fee_start_date'], $data['fee_end_date'], $data['fee_amount_paid'], $data['fee_discount'], $data['fee_balance'], $data['subscription_status'], $data['device_user_id']);
+        unset(
+            $data['avatar'],
+            $data['remove_avatar'],
+            $data['membership_plan_id'],
+            $data['fee_start_date'],
+            $data['fee_end_date'],
+            $data['fee_amount_paid'],
+            $data['fee_discount'],
+            $data['fee_balance'],
+            $data['admission_fee'],
+            $data['subscription_status'],
+            $data['device_user_id']
+        );
 
         $biometricId = $this->nextBiometricId();
         $data['device_user_id'] = $biometricId;
@@ -226,6 +242,7 @@ class MemberController extends Controller
         DB::transaction(function () use ($data, $fee, &$member) {
             $member = Member::create($data);
             $this->syncSubscription($member, $fee);
+            $this->syncAdmissionFee($member, $fee);
         });
 
         $devicePush = $zkUsers->pushMember($member);
@@ -273,11 +290,23 @@ class MemberController extends Controller
     {
         $member->load('activeSubscription.plan');
 
+        $existingAdmission = $member->payments()
+            ->where(function ($q) use ($member) {
+                $q->where('reference', 'ADM-MEMBER-'.$member->id)
+                    ->orWhere('notes', 'like', 'Admission fee%');
+            })
+            ->latest('id')
+            ->first();
+
         return view('members.edit', [
             'member' => $member,
             'plans' => $this->activePackages(),
             'subscription' => $member->activeSubscription,
             'trainers' => $this->activeTrainers(),
+            'defaultAdmissionFee' => $existingAdmission
+                ? (float) $existingAdmission->amount
+                : $this->defaultAdmissionFee(),
+            'existingAdmissionFee' => $existingAdmission ? (float) $existingAdmission->amount : null,
         ]);
     }
 
@@ -285,7 +314,19 @@ class MemberController extends Controller
     {
         $data = $this->validated($request, $member);
         $fee = $this->feeData($data);
-        unset($data['avatar'], $data['remove_avatar'], $data['membership_plan_id'], $data['fee_start_date'], $data['fee_end_date'], $data['fee_amount_paid'], $data['fee_discount'], $data['fee_balance'], $data['subscription_status'], $data['device_user_id']);
+        unset(
+            $data['avatar'],
+            $data['remove_avatar'],
+            $data['membership_plan_id'],
+            $data['fee_start_date'],
+            $data['fee_end_date'],
+            $data['fee_amount_paid'],
+            $data['fee_discount'],
+            $data['fee_balance'],
+            $data['admission_fee'],
+            $data['subscription_status'],
+            $data['device_user_id']
+        );
 
         if ($this->clearImageIfRequested($request, 'avatar', $member)) {
             $data['avatar'] = null;
@@ -296,6 +337,7 @@ class MemberController extends Controller
         DB::transaction(function () use ($member, $data, $fee) {
             $member->update($data);
             $this->syncSubscription($member, $fee);
+            $this->syncAdmissionFee($member, $fee);
         });
 
         // Keep device name in sync when member details change
@@ -341,6 +383,7 @@ class MemberController extends Controller
             'fee_amount_paid' => ['nullable', 'numeric', 'min:0'],
             'fee_discount' => ['nullable', 'numeric', 'min:0'],
             'fee_balance' => ['nullable', 'numeric', 'min:0'],
+            'admission_fee' => ['nullable', 'numeric', 'min:0'],
             'subscription_status' => ['nullable', 'in:active,leave,pending,cancelled'],
         ]);
 
@@ -363,8 +406,33 @@ class MemberController extends Controller
             'fee_amount_paid' => $data['fee_amount_paid'] ?? null,
             'fee_discount' => $data['fee_discount'] ?? null,
             'fee_balance' => $data['fee_balance'] ?? null,
+            'admission_fee' => $data['admission_fee'] ?? null,
             'subscription_status' => $data['subscription_status'] ?? 'active',
         ];
+    }
+
+    private function syncAdmissionFee(Member $member, array $fee): void
+    {
+        if (! array_key_exists('admission_fee', $fee) || $fee['admission_fee'] === null || $fee['admission_fee'] === '') {
+            return;
+        }
+
+        $amount = (float) $fee['admission_fee'];
+        if ($amount < 0.01) {
+            return;
+        }
+
+        app(MembershipPaymentService::class)->recordAdmissionFee(
+            $member,
+            $amount,
+            $member->joined_at?->toDateString() ?: now()->toDateString(),
+            'ADM-MEMBER-'.$member->id,
+        );
+    }
+
+    private function defaultAdmissionFee(): float
+    {
+        return max(0, (float) Setting::getValue('admission_fee', 0));
     }
 
     private function syncSubscription(Member $member, array $fee): void

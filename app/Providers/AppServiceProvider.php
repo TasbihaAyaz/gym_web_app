@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,9 +23,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->ensureWindowsOpenSsl();
 
-        \Illuminate\Support\Facades\View::composer('partials.topbar', function ($view) {
-            if (auth()->check() && ! auth()->user()->relationLoaded('role')) {
-                auth()->user()->load('role');
+        Blade::if('perm', fn (string $slug) => can_perm($slug));
+
+        View::composer(['partials.sidebar', 'partials.topbar', 'layouts.app'], function () {
+            if (auth()->check()) {
+                auth()->user()->loadMissing('role.permissions');
             }
         });
     }

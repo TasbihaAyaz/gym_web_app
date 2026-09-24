@@ -9,8 +9,12 @@
         <p>Member profile · <span class="code-pill">{{ $member->member_code }}</span></p>
     </div>
     <div class="toolbar-actions">
+        @perm('payments.create')
         <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="btn btn-primary">Collect Fee</a>
+        @endperm
+        @perm('members.edit')
         <a href="{{ route('members.edit', $member) }}" class="btn btn-secondary">Edit</a>
+        @endperm
         <a href="{{ route('members.index') }}" class="btn btn-ghost">Back</a>
     </div>
 </div>
@@ -110,6 +114,13 @@
                             Amount paid: {{ money($sub->amount_paid) }}
                             @if((float) ($sub->balance_due ?? 0) > 0)
                                 · Balance due: <strong style="color:#f87171">{{ money($sub->balance_due) }}</strong>
+                                @perm('payments.create')
+                                <a
+                                    href="{{ route('payments.create', ['member_id' => $member->id, 'amount' => number_format((float) $sub->balance_due, 2, '.', ''), 'collect_balance' => 1]) }}"
+                                    class="link"
+                                    style="margin-left:6px"
+                                >Collect balance</a>
+                                @endperm
                             @endif
                         </div>
                     </div>
@@ -139,7 +150,9 @@
             <h3 style="margin:0;font-size:15px">Complete Fee History</h3>
             <p style="margin:4px 0 0;font-size:12.5px;color:var(--text-dim)">All fee payments recorded for this member</p>
         </div>
+        @perm('payments.create')
         <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="btn btn-secondary btn-sm">Collect Fee</a>
+        @endperm
     </div>
     <div class="table-wrap">
         <table class="data-table">
@@ -162,7 +175,15 @@
                     <tr>
                         <td>{{ $payment->payment_date?->format('M d, Y') ?? '—' }}</td>
                         <td><span class="code-pill">{{ $payment->payment_number }}</span></td>
-                        <td style="font-weight:600">{{ $payment->plan?->name ?: '—' }}</td>
+                        <td style="font-weight:600">
+                            @if($payment->plan?->name)
+                                {{ $payment->plan->name }}
+                            @elseif(str_starts_with((string) $payment->reference, 'ADM-MEMBER-') || str_starts_with((string) $payment->notes, 'Admission fee'))
+                                Admission fee
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td>
                             @if($payment->fee_start_date && $payment->fee_end_date)
                                 {{ $payment->fee_start_date->format('M d, Y') }}
@@ -187,7 +208,9 @@
                     <tr>
                         <td colspan="10" style="text-align:center;padding:28px;color:var(--text-dim)">
                             No fee payments yet.
+                            @perm('payments.create')
                             <a href="{{ route('payments.create', ['member_id' => $member->id]) }}" class="link" style="margin-left:6px">Collect first fee</a>
+                            @endperm
                         </td>
                     </tr>
                 @endforelse

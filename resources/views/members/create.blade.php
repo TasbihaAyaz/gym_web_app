@@ -13,5 +13,11 @@
     </div>
 </div>
 
-@include('members.form', ['member' => null, 'plans' => $plans, 'subscription' => null, 'trainers' => $trainers])
+@include('members.form', [
+    'member' => null,
+    'plans' => $plans,
+    'subscription' => null,
+    'trainers' => $trainers,
+    'defaultAdmissionFee' => $defaultAdmissionFee ?? 0,
+])
 @endsection

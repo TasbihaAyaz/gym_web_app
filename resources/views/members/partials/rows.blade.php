@@ -3,6 +3,7 @@
         $sub = $member->activeSubscription;
         $expired = $sub && $sub->end_date->toDateString() < now()->toDateString();
         $expiring = $sub && ! $expired && $sub->end_date->toDateString() <= now()->addDays(7)->toDateString();
+        $balanceDue = round((float) ($sub?->balance_due ?? 0), 2);
     @endphp
     <tr>
         <td>
@@ -40,21 +41,40 @@
                 <span class="status-badge active">valid</span>
             @endif
         </td>
+        <td>
+            @if($balanceDue > 0)
+                <div style="font-weight:700;color:#f87171">{{ money($balanceDue) }}</div>
+                @perm('payments.create')
+                <a
+                    href="{{ route('payments.create', ['member_id' => $member->id, 'amount' => number_format($balanceDue, 2, '.', ''), 'collect_balance' => 1]) }}"
+                    class="link"
+                    style="font-size:11.5px"
+                    title="Collect balance from member"
+                >Collect balance</a>
+                @endperm
+            @else
+                <span style="color:var(--text-mute)">—</span>
+            @endif
+        </td>
         <td><span class="status-badge {{ $member->status }}">{{ $member->status }}</span></td>
         <td>
             <div class="table-actions">
                 <a href="{{ route('members.show', $member) }}" class="btn-icon" title="View">
                     <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>
+                @perm('members.edit')
                 <a href="{{ route('members.edit', $member) }}" class="btn-icon" title="Edit">
                     <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 </a>
+                @endperm
+                @perm('members.delete')
                 <form action="{{ route('members.destroy', $member) }}" method="POST" onsubmit="return confirm('Delete this member?')">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn-icon danger" title="Delete">
                         <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
                     </button>
                 </form>
+                @endperm
             </div>
         </td>
     </tr>

@@ -64,6 +64,13 @@ if (! function_exists('voice_asset')) {
     }
 }
 
+if (! function_exists('can_perm')) {
+    function can_perm(string $slug): bool
+    {
+        return auth()->user()?->hasPermission($slug) ?? false;
+    }
+}
+
 if (! function_exists('percent_change')) {
     /**
      * Percent change between two numbers; null when prior is zero and current is zero.

@@ -27,10 +27,12 @@
                 Export
             </button>
         </form>
+        @perm('members.create')
         <a href="{{ route('members.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Add Member
         </a>
+        @endperm
     </div>
 </div>
 
@@ -78,7 +80,10 @@
     <div class="mini-stat"><div class="label">Total Members</div><div class="value">{{ number_format($stats['total']) }}</div></div>
     <div class="mini-stat"><div class="label">Active</div><div class="value" style="color:#22c55e">{{ number_format($stats['active']) }}</div></div>
     <div class="mini-stat"><div class="label">Pending</div><div class="value" style="color:#3b82f6">{{ number_format($stats['pending']) }}</div></div>
-    <div class="mini-stat"><div class="label">Cancelled</div><div class="value" style="color:#ef4444">{{ number_format($stats['cancelled']) }}</div></div>
+    <div class="mini-stat">
+        <div class="label">Balance Due</div>
+        <div class="value" style="color:#f87171">{{ number_format($stats['balance_due'] ?? 0) }}</div>
+    </div>
 </div>
 
 <form method="GET" action="{{ route('members.index') }}" class="filter-bar" id="filter-form">
@@ -103,6 +108,7 @@
         <option value="active" @selected(request('fee_status') === 'active')>Fee Active</option>
         <option value="expiring" @selected(request('fee_status') === 'expiring')>Expiring (7 days)</option>
         <option value="expired" @selected(request('fee_status') === 'expired')>Fee Expired</option>
+        <option value="balance" @selected(request('fee_status') === 'balance')>Balance Due</option>
     </select>
     <button type="submit" class="btn btn-secondary">Filter</button>
     @if(request()->hasAny(['search','status','gender','fee_status']))
@@ -122,6 +128,7 @@
                         <th>Phone</th>
                         <th>Fee Period</th>
                         <th>Fee Expiry</th>
+                        <th>Balance</th>
                         <th>Status</th>
                         <th style="text-align:right">Actions</th>
                     </tr>
@@ -159,7 +166,9 @@
             <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
             <h3>No members found</h3>
             <p>Add your first member or adjust the filters.</p>
+            @perm('members.create')
             <a href="{{ route('members.create') }}" class="btn btn-primary">Add Member</a>
+            @endperm
         </div>
     @endif
 </div>

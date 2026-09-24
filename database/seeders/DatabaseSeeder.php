@@ -85,7 +85,8 @@ class DatabaseSeeder extends Seeder
             ->whereIn('slug', collect($receptionistModules)->flatMap(fn ($m) => [
                 "{$m}.view", "{$m}.create", "{$m}.edit",
             ]))
-            ->pluck('id');
+            ->pluck('id')
+            ->merge(Permission::query()->where('slug', 'reports.view')->pluck('id'));
         $receptionistRole->permissions()->sync($receptionistPermissionIds);
 
         User::create([
