@@ -12,14 +12,14 @@
                     id="member_id"
                     class="form-select searchable @error('member_id') is-invalid @enderror"
                     data-placeholder="Select member"
-                    data-search-placeholder="Search name or member code..."
+                    data-search-placeholder="Search name or Bio ID..."
                     data-context-url="{{ url('/payments/member-context') }}"
                     required
                 >
                     <option value="">Select member</option>
                     @foreach($members as $member)
                         <option value="{{ $member->id }}" @selected(old('member_id', $payment->member_id ?? request('member_id')) == $member->id)>
-                            {{ $member->full_name }}{{ $member->member_code ? ' ('.$member->member_code.')' : '' }}
+                            {{ $member->full_name }}{{ $member->device_user_id ? ' ('.$member->device_user_id.')' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -183,6 +183,18 @@
             <button type="submit" class="btn btn-primary">{{ $isEdit ? 'Update Payment' : 'Save Fee Payment' }}</button>
         </div>
     </form>
+
+    @if($isEdit)
+        @perm('payments.delete')
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+            <form action="{{ route('payments.destroy', $payment) }}" method="POST" onsubmit="return confirm('Delete this payment? This will reverse the amount from the linked account if it was completed.')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Delete Payment</button>
+            </form>
+        </div>
+        @endperm
+    @endif
 </div>
 
 @push('scripts')

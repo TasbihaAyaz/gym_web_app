@@ -52,4 +52,57 @@
         @endforelse
     </div>
 </div>
+
+<div class="form-card" style="margin-top:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px">
+        <h3 style="font-size:15px;margin:0">Assigned Members</h3>
+        <span style="font-size:12px;color:var(--text-mute)">{{ $trainer->members->count() }} member{{ $trainer->members->count() === 1 ? '' : 's' }}</span>
+    </div>
+    @if($trainer->members->isNotEmpty())
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Bio ID</th>
+                        <th>Phone</th>
+                        <th>Package</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($trainer->members as $member)
+                        <tr>
+                            <td>
+                                <div class="cell-user">
+                                    @if($member->avatar_url)
+                                        <img src="{{ $member->avatar_url }}" alt="" class="avatar-img">
+                                    @else
+                                        <div class="avatar-initials">{{ $member->initials }}</div>
+                                    @endif
+                                    <div>
+                                        <span class="name">{{ $member->full_name }}</span>
+                                        <span class="sub">{{ $member->email ?? 'No email' }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="code-pill">{{ $member->device_user_id ?: '—' }}</span></td>
+                            <td>{{ $member->phone ?? '—' }}</td>
+                            <td>{{ $member->activeSubscription?->plan?->name ?? '—' }}</td>
+                            <td><span class="status-badge {{ $member->status }}">{{ $member->status }}</span></td>
+                            <td>
+                                <a href="{{ route('members.show', $member) }}" class="btn-icon" title="View">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <p style="color:var(--text-dim);font-size:13px">No members assigned to this trainer.</p>
+    @endif
+</div>
 @endsection

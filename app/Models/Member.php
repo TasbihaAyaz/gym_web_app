@@ -16,11 +16,15 @@ class Member extends Model
         'member_code', 'device_user_id', 'first_name', 'last_name', 'email', 'phone', 'gender',
         'date_of_birth', 'avatar', 'address', 'emergency_contact', 'emergency_phone',
         'status', 'joined_at', 'notes', 'trainer_id',
+        'trainer_fee', 'trainer_commission', 'gym_commission',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'joined_at' => 'date',
+        'trainer_fee' => 'decimal:2',
+        'trainer_commission' => 'decimal:2',
+        'gym_commission' => 'decimal:2',
     ];
 
     public function getFullNameAttribute(): string
@@ -55,6 +59,11 @@ class Member extends Model
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(Trainer::class);
+    }
+
+    public function trainerHistories(): HasMany
+    {
+        return $this->hasMany(MemberTrainerHistory::class);
     }
 
     public function activeSubscription(): \Illuminate\Database\Eloquent\Relations\HasOne

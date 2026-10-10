@@ -19,10 +19,26 @@
     <div class="nav-section">Management</div>
     @endif
     @perm('members.view')
-    <a class="nav-item {{ request()->routeIs('members.*') ? 'active' : '' }}" href="{{ route('members.index') }}">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span>Members</span>
-    </a>
+    <div class="nav-group {{ request()->routeIs('members.*') ? 'open has-active' : '' }}">
+      <a class="nav-item {{ request()->routeIs('members.index', 'members.create', 'members.show', 'members.edit', 'members.pending-fees', 'members.export-pending-fees') && ! request()->routeIs('members.package-setup*', 'members.trainer-setup*') ? 'active' : '' }}" href="{{ route('members.index') }}">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Members</span>
+      </a>
+      <div class="nav-children">
+        <a class="nav-child {{ request()->routeIs('members.index', 'members.create', 'members.show', 'members.edit', 'members.pending-fees', 'members.export-pending-fees') && ! request()->routeIs('members.package-setup*', 'members.trainer-setup*') ? 'active' : '' }}" href="{{ route('members.index') }}">
+          <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          <span>All Members</span>
+        </a>
+        <a class="nav-child {{ request()->routeIs('members.package-setup*') ? 'active' : '' }}" href="{{ route('members.package-setup') }}">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>
+          <span>Member Package Setup</span>
+        </a>
+        <a class="nav-child {{ request()->routeIs('members.trainer-setup*') ? 'active' : '' }}" href="{{ route('members.trainer-setup') }}">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Member Trainer Setup</span>
+        </a>
+      </div>
+    </div>
     @endperm
     @perm('trainers.view')
     <a class="nav-item {{ request()->routeIs('trainers.*') ? 'active' : '' }}" href="{{ route('trainers.index') }}">

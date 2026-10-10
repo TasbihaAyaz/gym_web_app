@@ -129,6 +129,10 @@ html, body {
   margin-top: 6px;
 }
 
+.toast-row[hidden] {
+  display: none !important;
+}
+
 .toast-row span:first-child { color: #8b8b9e; }
 
 .fee-chip { font-weight: 700; }
@@ -144,4 +148,13 @@ html, body {
   font-size: 0.75rem;
   color: #8b8b9e;
   line-height: 1.4;
+}
+
+.toast-note.is-fee-period {
+  color: #fff;
+}
+
+.fee-period {
+  color: #fff;
+  font-weight: 700;
 }

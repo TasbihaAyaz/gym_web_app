@@ -8,6 +8,8 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GymClassController;
 use App\Http\Controllers\IclockController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\MemberPackageSetupController;
+use App\Http\Controllers\MemberTrainerSetupController;
 use App\Http\Controllers\MembershipPlanController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
@@ -61,7 +63,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:members')->group(function () {
         Route::get('members/export-pending-fees', [MemberController::class, 'exportPendingFees'])->name('members.export-pending-fees');
         Route::get('members/pending-fees', [MemberController::class, 'pendingFees'])->name('members.pending-fees');
-        Route::resource('members', MemberController::class);
+        Route::get('members/package-setup', [MemberPackageSetupController::class, 'index'])->name('members.package-setup');
+        Route::get('members/package-setup/search', [MemberPackageSetupController::class, 'search'])->name('members.package-setup.search');
+        Route::post('members/package-setup', [MemberPackageSetupController::class, 'store'])->name('members.package-setup.store');
+        Route::get('members/trainer-setup', [MemberTrainerSetupController::class, 'index'])->name('members.trainer-setup');
+        Route::get('members/trainer-setup/search', [MemberTrainerSetupController::class, 'search'])->name('members.trainer-setup.search');
+        Route::post('members/trainer-setup', [MemberTrainerSetupController::class, 'store'])->name('members.trainer-setup.store');
+        Route::resource('members', MemberController::class)->except(['destroy']);
     });
 
     Route::middleware('module:trainers')->group(function () {
