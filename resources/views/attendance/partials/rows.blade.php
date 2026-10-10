@@ -3,25 +3,29 @@
         $member = $row->member;
         $sub = $member?->activeSubscription;
         $endDate = $sub?->end_date;
+        $monthlyFee = $sub ? (float) $sub->amount_paid : null;
+        $balanceDue = $sub ? round((float) ($sub->balance_due ?? 0), 2) : 0;
+        $planPrice = $sub?->plan ? (float) $sub->plan->price : null;
 
+        // Fee status relative to the attendance day (not always "today").
+        $asOf = ($row->attendance_date ?? now())->copy()->startOfDay();
         $feeState = 'none';
         $feeLabel = 'No package';
 
         if ($endDate) {
-            $today = now()->startOfDay();
             $end = $endDate->copy()->startOfDay();
 
-            if ($end->lt($today)) {
+            if ($end->lt($asOf)) {
                 $feeState = 'expired';
-                $days = (int) $end->diffInDays($today);
+                $days = (int) $end->diffInDays($asOf);
                 $feeLabel = $days <= 1 ? 'Expired' : 'Expired ' . $days . 'd ago';
-            } elseif ($end->lte($today->copy()->addDays(7))) {
+            } elseif ($end->lte($asOf->copy()->addDays(7))) {
                 $feeState = 'expiring';
-                $days = (int) $today->diffInDays($end);
+                $days = (int) $asOf->diffInDays($end);
                 $feeLabel = $days === 0 ? 'Expires today' : $days . 'd left';
             } else {
                 $feeState = 'active';
-                $feeLabel = (int) $today->diffInDays($end) . 'd left';
+                $feeLabel = (int) $asOf->diffInDays($end) . 'd left';
             }
         }
     @endphp
@@ -31,13 +35,28 @@
                 <div class="avatar-initials">{{ $member?->initials ?? 'M' }}</div>
                 <div>
                     <span class="name">{{ $member?->full_name ?? '—' }}</span>
-                    <span class="sub">{{ $member?->member_code }}</span>
+                    <span class="sub">Bio {{ $member?->device_user_id ?: '—' }} · {{ $member?->member_code }}</span>
                 </div>
             </div>
         </td>
         <td>{{ $row->attendance_date?->format('M d, Y') }}</td>
         <td style="font-weight:600;color:#22c55e">{{ $row->check_in ? \Carbon\Carbon::parse($row->check_in)->format('h:i A') : '—' }}</td>
-        <td>{{ $sub?->plan?->name ?? '—' }}</td>
+        <td>
+            {{ $sub?->plan?->name ?? '—' }}
+            @if($planPrice !== null && $monthlyFee !== null && abs($planPrice - $monthlyFee) > 0.009)
+                <div style="font-size:11px;color:var(--text-mute)">Pkg {{ money($planPrice) }}</div>
+            @endif
+        </td>
+        <td>
+            @if($monthlyFee !== null)
+                <div style="font-weight:600">{{ money($monthlyFee) }}</div>
+                @if($balanceDue > 0)
+                    <div style="font-size:11px;color:var(--red);margin-top:2px">Bal {{ money($balanceDue) }}</div>
+                @endif
+            @else
+                <span style="color:var(--text-mute)">—</span>
+            @endif
+        </td>
         <td>
             @if($endDate)
                 <div>{{ $endDate->format('M d, Y') }}</div>

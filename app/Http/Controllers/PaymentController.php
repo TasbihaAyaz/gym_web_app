@@ -94,7 +94,8 @@ class PaymentController extends Controller
         }
 
         $duration = (int) ($sub?->plan?->duration_days ?: 30);
-        $suggestedEnd = Carbon::parse($suggestedStart)->addDays($duration)->toDateString();
+        $suggestedEnd = $member->feeExpiryForStart($suggestedStart)
+            ?: Carbon::parse($suggestedStart)->addDays($duration)->toDateString();
 
         return response()->json([
             'member' => [

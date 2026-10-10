@@ -115,9 +115,36 @@
             </div>
             <div class="form-group">
                 <label>Effective Date <span class="req">*</span></label>
-                <input type="date" name="effective_date" id="effective_date" class="form-control" value="{{ old('effective_date', now()->format('Y-m-d')) }}" @disabled(! $member) required>
+                @php
+                    $defaultStart = old('effective_date');
+                    if ($defaultStart === null && $sub?->end_date && $sub->end_date->copy()->startOfDay()->gte(now()->startOfDay())) {
+                        $defaultStart = $sub->end_date->copy()->addDay()->format('Y-m-d');
+                    }
+                    $defaultStart = $defaultStart ?: now()->format('Y-m-d');
+                @endphp
+                <input type="date" name="effective_date" id="effective_date" class="form-control" value="{{ $defaultStart }}" @disabled(! $member) required>
                 @error('effective_date')<span class="field-error">{{ $message }}</span>@enderror
-                <p class="field-hint" id="pkg-end-hint">Expiry auto-fills from package duration.</p>
+            </div>
+            <div class="form-group">
+                <label>Fee Expiry Date <span class="req">*</span></label>
+                @php
+                    $defaultExpiry = old('fee_expiry_date');
+                    if ($defaultExpiry === null && $member) {
+                        $defaultExpiry = $member->feeExpiryForStart($defaultStart);
+                    }
+                    if ($defaultExpiry === null) {
+                        $defaultExpiry = \Carbon\Carbon::parse($defaultStart)->addDays(30)->format('Y-m-d');
+                    }
+                @endphp
+                <input type="date" name="fee_expiry_date" id="fee_expiry_date" class="form-control" value="{{ $defaultExpiry }}" @disabled(! $member) required>
+                @error('fee_expiry_date')<span class="field-error">{{ $message }}</span>@enderror
+                <p class="field-hint" id="pkg-end-hint">
+                    @if($member?->fee_due_day)
+                        Permanent monthly due day: <strong>day {{ $member->fee_due_day }}</strong> each month. Changing expiry updates that due day.
+                    @else
+                        Set expiry once — that calendar day becomes this member’s permanent monthly due day.
+                    @endif
+                </p>
             </div>
             <div class="form-group">
                 <label>Change Type <span class="req">*</span></label>
@@ -187,7 +214,7 @@
             <p>{{ $member ? $member->full_name : 'Select a member to view history' }}</p>
         </div>
     </div>
-    @if($member && $member->subscriptions->isNotEmpty())
+    @if($member && ($packageHistory ?? collect())->isNotEmpty())
         <div class="table-wrap">
             <table class="data-table">
                 <thead>
@@ -201,9 +228,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($member->subscriptions as $row)
+                    @foreach($packageHistory as $row)
                         <tr>
-                            <td>{{ $row->plan?->name ?? '—' }}</td>
+                            <td>{{ $row->plan_name }}</td>
                             <td>{{ $row->start_date?->format('d M Y') ?? '—' }}</td>
                             <td>{{ $row->end_date?->format('d M Y') ?? '—' }}</td>
                             <td>{{ money($row->amount_paid) }}</td>
@@ -224,6 +251,7 @@
                             <th>Payment #</th>
                             <th>Package</th>
                             <th>Amount</th>
+                            <th>Period</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -234,6 +262,13 @@
                                 <td>{{ $pay->payment_number }}</td>
                                 <td>{{ $pay->plan?->name ?? '—' }}</td>
                                 <td>{{ money($pay->amount) }}</td>
+                                <td style="font-size:12px;color:var(--text-mute)">
+                                    @if($pay->fee_start_date)
+                                        {{ $pay->fee_start_date->format('d M Y') }} → {{ $pay->fee_end_date?->format('d M Y') ?? '—' }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td><span class="status-badge {{ $pay->status }}">{{ $pay->status }}</span></td>
                             </tr>
                         @endforeach
@@ -355,6 +390,7 @@
 (() => {
   const searchUrl = @json(route('members.package-setup.search'));
   const setupUrl = @json(route('members.package-setup'));
+  let feeDueDay = @json($member?->fee_due_day ? (int) $member->fee_due_day : null);
   const input = document.getElementById('pkg-search-input');
   const btn = document.getElementById('pkg-search-btn');
   const results = document.getElementById('pkg-search-results');
@@ -362,10 +398,35 @@
   const monthlyFee = document.getElementById('monthly_fee');
   const pkgFee = document.getElementById('pkg_fee_display');
   const effectiveDate = document.getElementById('effective_date');
+  const expiryDate = document.getElementById('fee_expiry_date');
   const endHint = document.getElementById('pkg-end-hint');
   const recordPayment = document.getElementById('record_payment');
   const paymentAmount = document.getElementById('payment_amount');
   const balanceInput = document.getElementById('balance');
+
+  function daysInMonth(year, monthIndex) {
+    return new Date(year, monthIndex + 1, 0).getDate();
+  }
+
+  function toIso(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function expiryFromDueDay(startStr, dueDay) {
+    if (!startStr || !dueDay) return '';
+    const start = new Date(startStr + 'T00:00:00');
+    const day = Math.min(Number(dueDay), daysInMonth(start.getFullYear(), start.getMonth()));
+    let candidate = new Date(start.getFullYear(), start.getMonth(), day);
+    if (candidate.getTime() <= start.getTime()) {
+      const next = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      const nextDay = Math.min(Number(dueDay), daysInMonth(next.getFullYear(), next.getMonth()));
+      candidate = new Date(next.getFullYear(), next.getMonth(), nextDay);
+    }
+    return toIso(candidate);
+  }
 
   async function runSearch() {
     const q = (input?.value || '').trim();
@@ -426,11 +487,26 @@
       const paid = Number(monthlyFee?.value || 0);
       balanceInput.value = Math.max(0, price - paid).toFixed(2);
     }
-    if (endHint && effectiveDate?.value) {
-      const d = new Date(effectiveDate.value + 'T00:00:00');
-      d.setDate(d.getDate() + duration);
-      const label = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
-      endHint.textContent = 'Package expires on ' + label + ' (' + duration + ' days).';
+    if (effectiveDate?.value) {
+      let iso = '';
+      if (feeDueDay) {
+        iso = expiryFromDueDay(effectiveDate.value, feeDueDay);
+      } else {
+        const d = new Date(effectiveDate.value + 'T00:00:00');
+        d.setDate(d.getDate() + duration);
+        iso = toIso(d);
+      }
+      if (expiryDate && expiryDate.dataset.autofill !== '0' && iso) {
+        expiryDate.value = iso;
+        expiryDate.dataset.autofill = '1';
+      }
+      if (endHint) {
+        if (feeDueDay) {
+          endHint.textContent = 'Permanent monthly due day ' + feeDueDay + ' → expiry ' + (expiryDate?.value || iso) + '. Change expiry to update the due day.';
+        } else {
+          endHint.textContent = 'Suggested from package (' + duration + ' days). The day you save becomes this member’s permanent monthly due day.';
+        }
+      }
     }
   }
 
@@ -444,6 +520,7 @@
   planSelect?.addEventListener('change', () => {
     if (monthlyFee) monthlyFee.dataset.autofill = '1';
     if (balanceInput) balanceInput.dataset.autofill = '1';
+    if (expiryDate) expiryDate.dataset.autofill = '1';
     syncFromPlan();
   });
   monthlyFee?.addEventListener('input', () => {
@@ -456,7 +533,19 @@
   });
   balanceInput?.addEventListener('input', () => { balanceInput.dataset.autofill = '0'; });
   paymentAmount?.addEventListener('input', () => { paymentAmount.dataset.autofill = '0'; });
-  effectiveDate?.addEventListener('change', syncFromPlan);
+  expiryDate?.addEventListener('change', () => {
+    expiryDate.dataset.autofill = '0';
+    if (expiryDate.value) {
+      feeDueDay = Number(expiryDate.value.split('-')[2] || 0) || feeDueDay;
+      if (endHint && feeDueDay) {
+        endHint.textContent = 'Will save permanent monthly due day ' + feeDueDay + ' for every future renew.';
+      }
+    }
+  });
+  effectiveDate?.addEventListener('change', () => {
+    if (expiryDate) expiryDate.dataset.autofill = '1';
+    syncFromPlan();
+  });
   recordPayment?.addEventListener('change', () => {
     if (recordPayment.checked) {
       const opt = planSelect?.selectedOptions?.[0];

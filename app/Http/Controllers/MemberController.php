@@ -216,6 +216,7 @@ class MemberController extends Controller
     public function store(Request $request, ZktecoUserSyncService $zkUsers): RedirectResponse
     {
         $data = $this->validated($request);
+        $data['is_staff'] = $request->boolean('is_staff');
         $fee = $this->feeData($data);
         unset(
             $data['avatar'],
@@ -312,6 +313,7 @@ class MemberController extends Controller
     public function update(Request $request, Member $member, ZktecoUserSyncService $zkUsers): RedirectResponse
     {
         $data = $this->validated($request, $member);
+        $data['is_staff'] = $request->boolean('is_staff');
         unset(
             $data['avatar'],
             $data['remove_avatar'],
@@ -356,6 +358,7 @@ class MemberController extends Controller
             'emergency_contact' => ['nullable', 'string', 'max:100'],
             'emergency_phone' => ['nullable', 'string', 'max:30'],
             'status' => ['required', 'in:active,leave,pending,cancelled'],
+            'is_staff' => ['nullable', 'boolean'],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'trainer_id' => ['nullable', 'integer', 'exists:trainers,id'],

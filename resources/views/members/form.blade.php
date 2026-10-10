@@ -82,9 +82,16 @@
                 <label>Status <span class="req">*</span></label>
                 <select name="status" class="form-select" required>
                     @foreach(['active','pending','leave','cancelled'] as $st)
-                        <option value="{{ $st }}" @selected(old('status', $member->status ?? 'pending') === $st)>{{ ucfirst($st) }}</option>
+                        <option value="{{ $st }}" @selected(old('status', $member->status ?? 'active') === $st)>{{ ucfirst($st) }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="form-group">
+                <label>Staff / Trainer</label>
+                <label class="switch-row compact" style="margin-top:6px">
+                    <input type="checkbox" name="is_staff" value="1" @checked(old('is_staff', $member->is_staff ?? false))>
+                    <span><strong>Staff attendance</strong> — include in Staff / Trainers filter (off / late)</span>
+                </label>
             </div>
             <div class="form-group">
                 <label>Joined Date</label>
