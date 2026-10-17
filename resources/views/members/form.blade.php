@@ -191,16 +191,12 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Fee From Date</label>
-                    <input type="date" name="fee_start_date" id="fee_start_date" class="form-control @error('fee_start_date') is-invalid @enderror" value="{{ $defaultStart }}">
-                    @error('fee_start_date')<span class="field-error">{{ $message }}</span>@enderror
-                </div>
+                <input type="hidden" name="fee_start_date" id="fee_start_date" value="{{ $defaultStart }}">
                 <div class="form-group">
                     <label>Fee Expiry Date</label>
                     <input type="date" name="fee_end_date" id="fee_end_date" class="form-control @error('fee_end_date') is-invalid @enderror" value="{{ $defaultEnd }}">
                     @error('fee_end_date')<span class="field-error">{{ $message }}</span>@enderror
-                    <p class="field-hint" id="fee-period-hint">End date auto-fills from package duration; you can change it.</p>
+                    <p class="field-hint" id="fee-period-hint">Starts from join date; expiry auto-fills from package duration.</p>
                 </div>
                 <div class="form-group full">
                     <div class="fee-total-paid" id="fee-total-paid" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft, rgba(32,56,224,.04))">
@@ -235,6 +231,7 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
     const planSelect = document.getElementById('membership_plan_id');
     const startInput = document.getElementById('fee_start_date');
     const endInput = document.getElementById('fee_end_date');
+    const joinedInput = document.querySelector('input[name="joined_at"]');
     const paidInput = document.getElementById('fee_amount_paid');
     const admissionInput = document.getElementById('admission_fee');
     const discountInput = document.getElementById('fee_discount');
@@ -270,6 +267,12 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
 
     function money(n) {
         return currencySymbol + Number(n || 0).toFixed(2);
+    }
+
+    function syncStartFromJoined() {
+        const start = joinedInput?.value || @json(now()->format('Y-m-d'));
+        if (startInput) startInput.value = start;
+        return start;
     }
 
     function applyDiscountToMonthly() {
@@ -329,6 +332,7 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
     function syncEndFromPlan() {
         const opt = planSelect?.selectedOptions?.[0];
         const price = packagePrice();
+        const start = syncStartFromJoined();
         if (opt?.value && price && paidInput) {
             const blank =
                 (paidInput.value === '' || paidInput.value === null)
@@ -342,18 +346,23 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
             } else {
                 grossMonthly = price;
                 applyDiscountToMonthly();
+                if (opt?.value && start && endInput) {
+                    const duration = Number(opt.dataset.duration || 30);
+                    endInput.value = addDays(start, duration);
+                    if (hint) hint.textContent = 'Starts from join date; auto-set to ' + duration + ' days. You can change the expiry date.';
+                }
                 return;
             }
         }
         updateHint();
-        if (!opt?.value || !startInput?.value) return;
+        if (!opt?.value || !start || !endInput) return;
         const duration = Number(opt.dataset.duration || 30);
-        endInput.value = addDays(startInput.value, duration);
-        if (hint) hint.textContent = 'Auto-set to ' + duration + ' days from start. You can change the expiry date.';
+        endInput.value = addDays(start, duration);
+        if (hint) hint.textContent = 'Starts from join date; auto-set to ' + duration + ' days. You can change the expiry date.';
     }
 
     planSelect?.addEventListener('change', syncEndFromPlan);
-    startInput?.addEventListener('change', syncEndFromPlan);
+    joinedInput?.addEventListener('change', syncEndFromPlan);
     admissionInput?.addEventListener('input', updateTotalPaid);
     discountInput?.addEventListener('input', applyDiscountToMonthly);
     paidInput?.addEventListener('input', () => {
@@ -362,6 +371,7 @@ document.getElementById('avatar-input')?.addEventListener('change', function (e)
         updateHint();
     });
     balanceInput?.addEventListener('input', updateHint);
+    syncStartFromJoined();
     updateHint();
 })();
 @endunless

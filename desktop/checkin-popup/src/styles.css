@@ -358,13 +358,50 @@ input:focus {
 
 .toast-row span:first-child { color: #8b8b9e; }
 
-.fee-chip { font-weight: 700; }
+.toast-row-status {
+  align-items: center;
+  margin-top: 10px;
+}
 
-.toast-body[data-status="expired"] .fee-chip,
-.pending { color: #fca5a5; }
+.fee-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  color: #e5e5ef;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
 
-.toast-body[data-status="expiring"] .fee-chip { color: #fcd34d; }
-.toast-body[data-status="active"] .fee-chip { color: #86efac; }
+.toast-body[data-status="expired"] .fee-chip {
+  color: #fff;
+  background: #dc2626;
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);
+}
+
+.toast-body[data-status="expiring"] .fee-chip {
+  color: #422006;
+  background: #fbbf24;
+  border-color: #f59e0b;
+}
+
+.toast-body[data-status="active"] .fee-chip {
+  color: #052e16;
+  background: #4ade80;
+  border-color: #22c55e;
+}
+
+.toast-body[data-status="none"] .fee-chip {
+  color: #c4c4d4;
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .toast-note {
   margin: 8px 0 0;

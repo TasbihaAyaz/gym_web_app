@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
@@ -44,8 +43,6 @@ class MemberPackageSetupController extends Controller
             'member' => $member,
             'packageHistory' => $packageHistory,
             'plans' => $this->activePackages(),
-            'accounts' => Account::where('is_active', true)->orderBy('name')->get(),
-            'defaultAccountId' => $this->membershipPayments->defaultCashAccountId(),
         ]);
     }
 
@@ -172,7 +169,7 @@ class MemberPackageSetupController extends Controller
             'remarks' => ['nullable', 'string', 'max:1000'],
             'record_payment' => ['nullable', 'boolean'],
             'payment_amount' => ['nullable', 'numeric', 'min:0'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'method' => ['nullable', 'in:cash,card,bank_transfer,online,other'],
             'cheque_no' => ['nullable', 'string', 'max:100'],
             'balance' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -223,8 +220,8 @@ class MemberPackageSetupController extends Controller
                     'active',
                     max(0, round((float) $plan->price - $paymentAmount - $balance, 2)),
                     null,
-                    $data['account_id'] ?? null,
-                    'cash',
+                    null,
+                    $data['method'] ?? 'cash',
                     $start,
                     $data['cheque_no'] ?? null,
                     $notes,

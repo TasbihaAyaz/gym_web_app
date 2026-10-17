@@ -42,7 +42,7 @@
                     @endforeach
                 </select>
                 @error('membership_plan_id')<span class="field-error">{{ $message }}</span>@enderror
-                <p class="field-hint">Fee is collected against this package. Monthly fee is cash received; balance stays outstanding separately. Discount is only on new member registration.</p>
+                <p class="field-hint">Monthly fee prefills from last paid amount until changed in Member Package Setup. Balance stays outstanding separately.</p>
             </div>
             <div class="form-group">
                 <label>Fee From Date</label>
@@ -210,6 +210,8 @@
   const hint = document.getElementById('fee-split-hint');
   const contextBox = document.getElementById('member-context');
   let expiryManual = false;
+  // Last monthly fee for the member's current package (from Package Setup / last collection).
+  let lastPaidFee = { planId: null, amount: 0 };
 
   function addDays(dateStr, days) {
     if (!dateStr) return '';
@@ -321,6 +323,10 @@
 
       if (applySuggestions) {
         const suggested = data.suggested_fee || {};
+        lastPaidFee = {
+          planId: suggested.plan_id ? String(suggested.plan_id) : null,
+          amount: Number(suggested.amount || suggested.last_paid || 0),
+        };
         if (suggested.plan_id && planSelect) {
           planSelect.value = String(suggested.plan_id);
           planSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -345,8 +351,12 @@
       updateFeeHint();
       return;
     }
-    if (opt.dataset.price && amountInput && !amountInput.dataset.touched) {
-      amountInput.value = Number(opt.dataset.price).toFixed(2);
+    if (amountInput && !amountInput.dataset.touched) {
+      const samePackage = lastPaidFee.planId && lastPaidFee.planId === String(opt.value) && lastPaidFee.amount >= 0.01;
+      const fill = samePackage ? lastPaidFee.amount : Number(opt.dataset.price || 0);
+      if (fill >= 0.01) {
+        amountInput.value = Number(fill).toFixed(2);
+      }
       if (balanceInput && !balanceInput.dataset.touched) balanceInput.value = '0.00';
     }
     if (startInput && !startInput.value) startInput.value = new Date().toISOString().slice(0, 10);
@@ -369,6 +379,7 @@
 
   memberSelect?.addEventListener('change', () => {
     expiryManual = false;
+    lastPaidFee = { planId: null, amount: 0 };
     if (amountInput) delete amountInput.dataset.touched;
     if (balanceInput) delete balanceInput.dataset.touched;
     loadMemberContext(memberSelect.value, true);

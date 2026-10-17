@@ -97,6 +97,22 @@ class PaymentController extends Controller
         $suggestedEnd = $member->feeExpiryForStart($suggestedStart)
             ?: Carbon::parse($suggestedStart)->addDays($duration)->toDateString();
 
+        // Prefer last monthly fee collected (skip balance-only collections).
+        // Catalog plan price is only a fallback until Package Setup / a fee payment sets the amount.
+        $lastPackagePayment = $member->payments->first(function ($p) {
+            if ($p->status !== 'completed' || ! $p->membership_plan_id || (float) $p->amount < 0.01) {
+                return false;
+            }
+
+            return ! str_contains(strtolower((string) ($p->notes ?? '')), 'balance collection');
+        });
+        $lastPaid = round((float) ($lastPackagePayment?->amount ?? 0), 2);
+        if ($lastPaid < 0.01) {
+            $lastPaid = round((float) ($sub?->amount_paid ?? 0), 2);
+        }
+        $planPrice = round((float) ($sub?->plan?->price ?? 0), 2);
+        $suggestedAmount = $lastPaid >= 0.01 ? $lastPaid : $planPrice;
+
         return response()->json([
             'member' => [
                 'id' => $member->id,
@@ -135,7 +151,9 @@ class PaymentController extends Controller
                 'start' => $suggestedStart,
                 'end' => $suggestedEnd,
                 'plan_id' => $sub?->membership_plan_id,
-                'amount' => (float) ($sub?->plan?->price ?? 0),
+                'amount' => $suggestedAmount,
+                'last_paid' => $lastPaid,
+                'plan_price' => $planPrice,
             ],
             'fee_history' => $member->subscriptions
                 ->sortByDesc(fn ($s) => $s->end_date?->timestamp ?? $s->id)

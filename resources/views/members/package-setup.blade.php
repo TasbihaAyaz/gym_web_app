@@ -166,7 +166,7 @@
                 <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="m5 6 7-3 7 3"/><path d="M4 10v11M20 10v11"/></svg>
                 <div>
                     <h3>Payment (Optional)</h3>
-                    <p>Record cash only if collecting now</p>
+                    <p>Record payment only if collecting now</p>
                 </div>
             </div>
             <div class="form-group">
@@ -175,7 +175,7 @@
             </div>
             <label class="switch-row compact" style="margin-bottom:14px">
                 <input type="checkbox" name="record_payment" id="record_payment" value="1" @checked(old('record_payment')) @disabled(! $member)>
-                <span><strong>Record payment in account</strong></span>
+                <span><strong>Record payment</strong></span>
             </label>
             <div id="payment-fields" class="pkg-payment-fields">
                 <div class="form-group">
@@ -183,11 +183,10 @@
                     <input type="number" step="0.01" min="0" name="payment_amount" id="payment_amount" class="form-control" value="{{ old('payment_amount') }}" @disabled(! $member)>
                 </div>
                 <div class="form-group">
-                    <label>Account</label>
-                    <select name="account_id" class="form-select" @disabled(! $member)>
-                        <option value="">Default cash</option>
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" @selected((string) old('account_id', $defaultAccountId) === (string) $account->id)>{{ $account->name }}</option>
+                    <label>Method</label>
+                    <select name="method" class="form-select" @disabled(! $member)>
+                        @foreach(['cash','card','bank_transfer','online','other'] as $m)
+                            <option value="{{ $m }}" @selected(old('method', 'cash') === $m)>{{ ucfirst(str_replace('_', ' ', $m)) }}</option>
                         @endforeach
                     </select>
                 </div>

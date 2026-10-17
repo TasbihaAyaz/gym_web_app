@@ -23,45 +23,7 @@ class MemberController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
-        $query = Member::query()
-            ->with(['activeSubscription.plan', 'trainer'])
-            ->orderByRaw("CAST(NULLIF(device_user_id, '') AS UNSIGNED) DESC")
-            ->orderByDesc('id');
-
-        if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('member_code', 'like', "%{$search}%");
-            });
-        }
-
-        if ($status = $request->get('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($gender = $request->get('gender')) {
-            $query->where('gender', $gender);
-        }
-
-        if ($fee = $request->get('fee_status')) {
-            if ($fee === 'active') {
-                $query->whereHas('activeSubscription', fn ($q) => $q->whereDate('end_date', '>=', now()->toDateString()));
-            } elseif ($fee === 'expiring') {
-                $query->whereHas('activeSubscription', function ($q) {
-                    $q->whereDate('end_date', '>=', now()->toDateString())
-                        ->whereDate('end_date', '<=', now()->addDays(7)->toDateString());
-                });
-            } elseif ($fee === 'expired') {
-                $query->whereHas('activeSubscription', fn ($q) => $q->whereDate('end_date', '<', now()->toDateString()));
-            } elseif ($fee === 'balance') {
-                $query->whereHas('activeSubscription', fn ($q) => $q->where('balance_due', '>', 0));
-            }
-        }
-
-        $members = $query->paginate(25)->withQueryString();
+        $members = $this->filteredMembersQuery($request)->paginate(25)->withQueryString();
 
         // Infinite scroll: return only the next rows
         if ($request->boolean('partial')) {
@@ -80,6 +42,59 @@ class MemberController extends Controller
         ];
 
         return view('members.index', compact('members', 'stats'));
+    }
+
+    /** Export members matching the current list filters (status, search, gender, fee status). */
+    public function export(Request $request): StreamedResponse
+    {
+        $members = $this->filteredMembersQuery($request)->get();
+        $status = $request->get('status') ?: 'all';
+        $filename = 'members-'.$status.'-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($members) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, [
+                'Bio ID',
+                'Member Code',
+                'Member Name',
+                'Phone',
+                'Email',
+                'Gender',
+                'Member Status',
+                'Trainer',
+                'Plan',
+                'Fee Start',
+                'Fee End',
+                'Balance Due',
+                'Joined',
+            ]);
+
+            foreach ($members as $member) {
+                $sub = $member->activeSubscription;
+
+                fputcsv($out, [
+                    $member->device_user_id ?: '',
+                    $member->member_code,
+                    $member->full_name,
+                    $member->phone ?: '',
+                    $member->email ?: '',
+                    $member->gender ? ucfirst($member->gender) : '',
+                    ucfirst($member->status),
+                    $member->trainer?->full_name ?? 'Self training',
+                    $sub?->plan?->name ?? '',
+                    $sub?->start_date?->format('Y-m-d') ?? '',
+                    $sub?->end_date?->format('Y-m-d') ?? '',
+                    number_format((float) ($sub?->balance_due ?? 0), 2, '.', ''),
+                    $member->joined_at?->format('Y-m-d') ?? '',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     /** JSON list of members whose fee expires in the selected date range (popup). */
@@ -134,6 +149,7 @@ class MemberController extends Controller
             fputcsv($out, [
                 'Expiry From',
                 'Expiry To',
+                'Bio ID',
                 'Member Code',
                 'Member Name',
                 'Phone',
@@ -158,6 +174,7 @@ class MemberController extends Controller
                 fputcsv($out, [
                     $from,
                     $to,
+                    $member->device_user_id ?: '',
                     $member->member_code,
                     $member->full_name,
                     $member->phone ?: '',
@@ -178,12 +195,58 @@ class MemberController extends Controller
         ]);
     }
 
+    /** Shared list filters for index + export. */
+    private function filteredMembersQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Member::query()
+            ->with(['activeSubscription.plan', 'trainer'])
+            ->orderByRaw("CAST(NULLIF(device_user_id, '') AS UNSIGNED) DESC")
+            ->orderByDesc('id');
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('member_code', 'like', "%{$search}%")
+                    ->orWhere('device_user_id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($gender = $request->get('gender')) {
+            $query->where('gender', $gender);
+        }
+
+        if ($fee = $request->get('fee_status')) {
+            if ($fee === 'active') {
+                $query->whereHas('activeSubscription', fn ($q) => $q->whereDate('end_date', '>=', now()->toDateString()));
+            } elseif ($fee === 'expiring') {
+                $query->whereHas('activeSubscription', function ($q) {
+                    $q->whereDate('end_date', '>=', now()->toDateString())
+                        ->whereDate('end_date', '<=', now()->addDays(7)->toDateString());
+                });
+            } elseif ($fee === 'expired') {
+                $query->whereHas('activeSubscription', fn ($q) => $q->whereDate('end_date', '<', now()->toDateString()));
+            } elseif ($fee === 'balance') {
+                $query->whereHas('activeSubscription', fn ($q) => $q->where('balance_due', '>', 0));
+            }
+        }
+
+        return $query;
+    }
+
     /** @return array{0: string, 1: string, 2: \Illuminate\Support\Collection<int, Member>} */
     private function feeExpiryMembers(Request $request): array
     {
         $data = $request->validate([
             'expiry_from' => ['required', 'date'],
             'expiry_to' => ['required', 'date', 'after_or_equal:expiry_from'],
+            'status' => ['nullable', 'in:active,pending,leave,cancelled'],
         ]);
 
         $from = Carbon::parse($data['expiry_from'])->toDateString();
@@ -191,7 +254,12 @@ class MemberController extends Controller
 
         $members = Member::query()
             ->with(['activeSubscription.plan', 'trainer'])
-            ->where('status', '!=', 'cancelled')
+            ->when(
+                filled($data['status'] ?? null),
+                fn ($q) => $q->where('status', $data['status']),
+                // All Status: include every member status (including cancelled)
+                fn ($q) => $q
+            )
             ->whereHas('activeSubscription', function ($query) use ($from, $to) {
                 $query->whereDate('end_date', '>=', $from)
                     ->whereDate('end_date', '<=', $to);

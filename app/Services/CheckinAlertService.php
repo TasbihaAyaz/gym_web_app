@@ -45,9 +45,9 @@ class CheckinAlertService
         $isCheckIn = $punch->applied_as === 'check_in';
 
         $feeLabel = match ($feeStatus) {
-            'active' => $pendingBalance > 0 ? 'Fee Active · Balance Due' : 'Fee Active',
+            'active' => $pendingBalance > 0 ? 'Fee Paid · Balance Due' : 'Fee Paid',
             'expiring' => 'Expiring Soon',
-            'expired' => 'Fee Pending',
+            'expired' => 'Fee Expired',
             default => 'No Fee Period',
         };
 
