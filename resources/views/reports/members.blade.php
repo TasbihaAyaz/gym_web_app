@@ -17,6 +17,7 @@
             <thead>
                 <tr>
                     <th>Member</th>
+                    <th>Bio ID</th>
                     <th>Code</th>
                     <th>Phone</th>
                     <th>Package</th>
@@ -33,6 +34,7 @@
                         <td>
                             <a href="{{ route('members.show', $member) }}" style="font-weight:600;color:inherit">{{ $member->full_name }}</a>
                         </td>
+                        <td><span class="code-pill">{{ $member->device_user_id ?: '—' }}</span></td>
                         <td><span class="code-pill">{{ $member->member_code }}</span></td>
                         <td>{{ $member->phone ?? '—' }}</td>
                         <td>{{ $sub?->plan?->name ?? '—' }}</td>
@@ -48,7 +50,7 @@
                         <td style="font-weight:600">{{ money($paidInRange[$member->id] ?? 0) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-dim)">No members matched this date range (joined, fee period, or payment).</td></tr>
+                    <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text-dim)">No members matched this date range (joined, payment, or package start in range).</td></tr>
                 @endforelse
             </tbody>
         </table>

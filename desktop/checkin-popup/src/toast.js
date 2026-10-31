@@ -16,8 +16,6 @@ const els = {
   feeChip: document.getElementById('toast-fee-chip'),
   feeRangeRow: document.getElementById('toast-fee-range-row'),
   feeRange: document.getElementById('toast-fee-range'),
-  pendingRow: document.getElementById('toast-pending-row'),
-  pending: document.getElementById('toast-pending'),
   note: document.getElementById('toast-note'),
   audioCheckin: document.getElementById('audio-checkin'),
   audioExpired: document.getElementById('audio-expired'),
@@ -40,7 +38,7 @@ function feePeriodDate(fee) {
 
 function feeNote(fee) {
   if (!fee || fee.status === 'none') return 'No package / fee on file.';
-  if (fee.status === 'expired') return 'Fee expired — renewal pending.';
+  if (fee.status === 'expired') return 'Membership fee has expired — please renew.';
   if (fee.status === 'expiring') return 'Fee expiring soon — please renew.';
   if ((fee.pending || 0) > 0) return `Outstanding balance ${money(fee.pending)}.`;
   // Active with no dates on the row — still show Fee Period (white via CSS class)
@@ -139,7 +137,6 @@ function fill(punch) {
 
   const period = feePeriodDate(fee);
   const pending = Number(fee.pending || 0);
-  const paid = Number(fee.amount_paid || 0);
   const isActive = status === 'active' && pending <= 0;
 
   // Active members: show Fee Period dates in white (replaces "Fee is currently active.")
@@ -154,15 +151,6 @@ function fill(punch) {
       els.feeRangeRow.hidden = true;
       els.feeRange.textContent = '—';
     }
-  }
-
-  if (status === 'expired' || pending > 0) {
-    els.pendingRow.hidden = false;
-    els.pending.textContent = pending > 0
-      ? money(pending)
-      : (paid > 0 ? `${money(paid)} (renew)` : 'Renewal due');
-  } else {
-    els.pendingRow.hidden = true;
   }
 
   els.note.textContent = feeNote(fee);

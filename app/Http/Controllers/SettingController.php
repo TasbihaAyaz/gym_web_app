@@ -172,6 +172,14 @@ class SettingController extends Controller
                 'rules' => ['nullable', 'numeric', 'min:0'],
             ],
             [
+                'key' => 'staff_checkin_time',
+                'label' => 'Staff Check-in Time (HH:MM)',
+                'group' => 'operations',
+                'type' => 'string',
+                'default' => '10:00',
+                'rules' => ['nullable', 'string', 'max:5'],
+            ],
+            [
                 'key' => 'tax_rate',
                 'label' => 'Default Tax Rate (%)',
                 'group' => 'finance',

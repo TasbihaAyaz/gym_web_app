@@ -10,6 +10,7 @@
     </div>
     <div class="toolbar-actions">
         <form method="GET" action="{{ route('members.export-pending-fees') }}" id="fee-expiry-form" class="toolbar-actions" style="gap:8px;flex-wrap:wrap">
+            <input type="hidden" name="status" id="fee-expiry-status" value="{{ request('status') }}">
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim)">
                 <span>From</span>
                 <input type="date" name="expiry_from" id="expiry_from" class="form-control" style="width:auto;max-width:160px" value="{{ request('expiry_from', now()->startOfMonth()->toDateString()) }}" title="Fee expiry from date" required>
@@ -22,11 +23,15 @@
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                 Show Fee Expiry
             </button>
-            <button type="submit" class="btn btn-secondary">
+            <button type="submit" class="btn btn-secondary" title="Export fee expiry CSV for the selected dates (uses Status filter)">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
-                Export
+                Export Fee Expiry
             </button>
         </form>
+        <a href="{{ route('members.export', request()->only(['search', 'status', 'gender', 'fee_status'])) }}" class="btn btn-secondary" id="members-export-btn" title="Export members matching current filters">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Export
+        </a>
         @perm('members.create')
         <a href="{{ route('members.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -405,6 +410,41 @@ body.fee-expiry-modal-open { overflow: hidden; }
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  function currentStatusFilter() {
+    const statusSelect = document.querySelector('#filter-form select[name="status"]');
+    return statusSelect ? statusSelect.value : '';
+  }
+
+  function syncFeeExpiryStatus() {
+    const statusInput = document.getElementById('fee-expiry-status');
+    if (statusInput) statusInput.value = currentStatusFilter();
+  }
+
+  function syncMembersExportLinks() {
+    const form = document.getElementById('filter-form');
+    if (!form) return;
+    const params = new URLSearchParams(new FormData(form));
+    ['search', 'status', 'gender', 'fee_status'].forEach((key) => {
+      if (!params.get(key)) params.delete(key);
+    });
+    const qs = params.toString();
+    const href = @json(route('members.export')) + (qs ? ('?' + qs) : '');
+    const exportBtn = document.getElementById('members-export-btn');
+    if (exportBtn) exportBtn.setAttribute('href', href);
+  }
+
+  const filterForm = document.getElementById('filter-form');
+  if (filterForm) {
+    filterForm.addEventListener('change', () => {
+      syncFeeExpiryStatus();
+      syncMembersExportLinks();
+    });
+    filterForm.addEventListener('input', syncMembersExportLinks);
+  }
+  document.getElementById('fee-expiry-form')?.addEventListener('submit', syncFeeExpiryStatus);
+  syncFeeExpiryStatus();
+  syncMembersExportLinks();
+
   async function loadFeeExpiry() {
     const from = fromInput.value;
     const to = toInput.value;
@@ -417,6 +457,8 @@ body.fee-expiry-modal-open { overflow: hidden; }
       return;
     }
 
+    syncFeeExpiryStatus();
+
     openModal();
     loadingEl.hidden = false;
     errorEl.hidden = true;
@@ -427,6 +469,8 @@ body.fee-expiry-modal-open { overflow: hidden; }
 
     try {
       const qs = new URLSearchParams({ expiry_from: from, expiry_to: to });
+      const status = currentStatusFilter();
+      if (status) qs.set('status', status);
       const res = await fetch(url + '?' + qs.toString(), {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       });

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\Member;
 use App\Models\MembershipPlan;
+use App\Models\Payment;
 use App\Services\MembershipPaymentService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -24,21 +24,105 @@ class MemberPackageSetupController extends Controller
     public function index(Request $request): View
     {
         $member = null;
+        $packageHistory = collect();
+
         if ($request->filled('member_id')) {
             $member = Member::with([
                 'trainer',
                 'activeSubscription.plan',
                 'subscriptions' => fn ($q) => $q->with('plan')->orderByDesc('end_date')->orderByDesc('id'),
-                'payments' => fn ($q) => $q->with('plan')->latest('payment_date')->latest('id')->limit(12),
+                'payments' => fn ($q) => $q->with('plan')->latest('payment_date')->latest('id')->limit(50),
             ])->find($request->integer('member_id'));
+
+            if ($member) {
+                $packageHistory = $this->buildPackageHistory($member);
+            }
         }
 
         return view('members.package-setup', [
             'member' => $member,
+            'packageHistory' => $packageHistory,
             'plans' => $this->activePackages(),
-            'accounts' => Account::where('is_active', true)->orderBy('name')->get(),
-            'defaultAccountId' => $this->membershipPayments->defaultCashAccountId(),
         ]);
+    }
+
+    /**
+     * Build full package-period history from fee payments (and any subscription-only rows).
+     * Past renewals live on payments even when the active subscription row was overwritten.
+     */
+    private function buildPackageHistory(Member $member)
+    {
+        $today = now()->startOfDay();
+        $active = $member->activeSubscription;
+        $rows = collect();
+
+        $feePayments = Payment::query()
+            ->with('plan')
+            ->where('member_id', $member->id)
+            ->whereNotNull('fee_start_date')
+            ->whereNotNull('membership_plan_id')
+            ->orderByDesc('fee_start_date')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($feePayments as $payment) {
+            $start = optional($payment->fee_start_date)->toDateString();
+            $end = optional($payment->fee_end_date)->toDateString();
+            $key = $start.'|'.$end.'|'.$payment->membership_plan_id;
+            if ($rows->has($key)) {
+                continue;
+            }
+
+            $isActive = $active
+                && optional($active->start_date)->toDateString() === $start
+                && optional($active->end_date)->toDateString() === $end
+                && (int) $active->membership_plan_id === (int) $payment->membership_plan_id;
+
+            $status = 'completed';
+            if ($isActive) {
+                $status = 'active';
+            } elseif ($payment->fee_end_date && $payment->fee_end_date->copy()->startOfDay()->lt($today)) {
+                $status = 'expired';
+            }
+
+            $rows->put($key, (object) [
+                'plan_name' => $payment->plan?->name ?? '—',
+                'start_date' => $payment->fee_start_date,
+                'end_date' => $payment->fee_end_date,
+                'amount_paid' => (float) $payment->amount,
+                'balance_due' => (float) ($payment->balance ?? 0),
+                'status' => $status,
+            ]);
+        }
+
+        foreach ($member->subscriptions as $sub) {
+            $start = optional($sub->start_date)->toDateString();
+            $end = optional($sub->end_date)->toDateString();
+            $key = $start.'|'.$end.'|'.$sub->membership_plan_id;
+            if ($rows->has($key)) {
+                continue;
+            }
+
+            $status = $sub->status;
+            if ($status === 'active' && $sub->end_date && $sub->end_date->copy()->startOfDay()->lt($today)) {
+                $status = 'expired';
+            } elseif ($status === 'cancelled' && $sub->end_date && $sub->end_date->copy()->startOfDay()->lt($today)) {
+                $status = 'expired';
+            }
+
+            $rows->put($key, (object) [
+                'plan_name' => $sub->plan?->name ?? '—',
+                'start_date' => $sub->start_date,
+                'end_date' => $sub->end_date,
+                'amount_paid' => (float) $sub->amount_paid,
+                'balance_due' => (float) ($sub->balance_due ?? 0),
+                'status' => $status,
+            ]);
+        }
+
+        return $rows->values()->sortByDesc(function ($row) {
+            return optional($row->start_date)->timestamp ?? 0;
+        })->values();
     }
 
     public function search(Request $request): JsonResponse
@@ -80,11 +164,12 @@ class MemberPackageSetupController extends Controller
             'membership_plan_id' => ['required', 'exists:membership_plans,id'],
             'monthly_fee' => ['required', 'numeric', 'min:0'],
             'effective_date' => ['required', 'date'],
+            'fee_expiry_date' => ['required', 'date', 'after_or_equal:effective_date'],
             'change_type' => ['required', 'in:new,renew,upgrade,downgrade,transfer'],
             'remarks' => ['nullable', 'string', 'max:1000'],
             'record_payment' => ['nullable', 'boolean'],
             'payment_amount' => ['nullable', 'numeric', 'min:0'],
-            'account_id' => ['nullable', 'exists:accounts,id'],
+            'method' => ['nullable', 'in:cash,card,bank_transfer,online,other'],
             'cheque_no' => ['nullable', 'string', 'max:100'],
             'balance' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -92,7 +177,11 @@ class MemberPackageSetupController extends Controller
         $member = Member::findOrFail($data['member_id']);
         $plan = MembershipPlan::findOrFail($data['membership_plan_id']);
         $start = $data['effective_date'];
-        $end = Carbon::parse($start)->addDays((int) $plan->duration_days)->toDateString();
+        $end = $data['fee_expiry_date']
+            ?: ($member->feeExpiryForStart($start)
+                ?: Carbon::parse($start)->addDays((int) $plan->duration_days)->toDateString());
+        // Permanent monthly due day = day of the expiry date they set.
+        $dueDay = (int) Carbon::parse($end)->day;
         $monthlyFee = round((float) $data['monthly_fee'], 2);
         $recordPayment = $request->boolean('record_payment');
         $paymentAmount = round((float) ($data['payment_amount'] ?? 0), 2);
@@ -111,6 +200,7 @@ class MemberPackageSetupController extends Controller
             $plan,
             $start,
             $end,
+            $dueDay,
             $monthlyFee,
             $recordPayment,
             $paymentAmount,
@@ -118,6 +208,8 @@ class MemberPackageSetupController extends Controller
             $notes,
             $data,
         ) {
+            $member->update(['fee_due_day' => $dueDay]);
+
             if ($recordPayment && $paymentAmount >= 0.01) {
                 $this->membershipPayments->recordPackageFee(
                     $member,
@@ -128,8 +220,8 @@ class MemberPackageSetupController extends Controller
                     'active',
                     max(0, round((float) $plan->price - $paymentAmount - $balance, 2)),
                     null,
-                    $data['account_id'] ?? null,
-                    'cash',
+                    null,
+                    $data['method'] ?? 'cash',
                     $start,
                     $data['cheque_no'] ?? null,
                     $notes,

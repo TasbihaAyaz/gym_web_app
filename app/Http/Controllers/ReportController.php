@@ -48,6 +48,7 @@ class ReportController extends Controller
         $report = $this->reportType($request);
 
         return match ($report) {
+            'members' => $this->exportMembers($from, $to),
             'active' => $this->exportActive($from, $to),
             'pending_fees' => $this->exportPendingFees($from, $to),
             'expenses' => $this->exportExpenses($from, $to),
@@ -199,23 +200,21 @@ class ReportController extends Controller
         $fromDate = $from->toDateString();
         $toDate = $to->toDateString();
 
+        // Members who joined in range, OR had a completed fee payment in range,
+        // OR started a fee/package period in range (renew / new package).
         $members = Member::query()
             ->with(['activeSubscription.plan'])
             ->where(function ($q) use ($fromDate, $toDate) {
                 $q->whereBetween('joined_at', [$fromDate, $toDate])
-                    ->orWhereHas('activeSubscription', function ($s) use ($fromDate, $toDate) {
-                        $s->where(function ($w) use ($fromDate, $toDate) {
-                            $w->whereBetween('start_date', [$fromDate, $toDate])
-                                ->orWhereBetween('end_date', [$fromDate, $toDate])
-                                ->orWhere(function ($x) use ($fromDate, $toDate) {
-                                    $x->whereDate('start_date', '<=', $fromDate)
-                                        ->whereDate('end_date', '>=', $toDate);
-                                });
-                        });
-                    })
                     ->orWhereHas('payments', function ($p) use ($fromDate, $toDate) {
                         $p->where('status', 'completed')
-                            ->whereBetween('payment_date', [$fromDate, $toDate]);
+                            ->where(function ($w) use ($fromDate, $toDate) {
+                                $w->whereBetween('payment_date', [$fromDate, $toDate])
+                                    ->orWhereBetween('fee_start_date', [$fromDate, $toDate]);
+                            });
+                    })
+                    ->orWhereHas('subscriptions', function ($s) use ($fromDate, $toDate) {
+                        $s->whereBetween('start_date', [$fromDate, $toDate]);
                     });
             })
             ->orderBy('first_name')
@@ -561,12 +560,26 @@ class ReportController extends Controller
         $filename = 'members-report-'.$from->toDateString().'-to-'.$to->toDateString().'.csv';
 
         return $this->csvDownload($filename, function ($out) use ($data, $from, $to) {
-            fputcsv($out, ['From', 'To', 'Member Code', 'Name', 'Phone', 'Status', 'Package', 'Fee Start', 'Fee End', 'Joined', 'Paid In Range ('.currency_code().')']);
+            fputcsv($out, [
+                'From',
+                'To',
+                'Bio ID',
+                'Member Code',
+                'Name',
+                'Phone',
+                'Status',
+                'Package',
+                'Fee Start',
+                'Fee End',
+                'Joined',
+                'Paid In Range ('.currency_code().')',
+            ]);
             foreach ($data['members'] as $member) {
                 $sub = $member->activeSubscription;
                 fputcsv($out, [
                     $from->toDateString(),
                     $to->toDateString(),
+                    $member->device_user_id ?: '',
                     $member->member_code,
                     $member->full_name,
                     $member->phone,

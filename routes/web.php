@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware('module:members')->group(function () {
+        Route::get('members/export', [MemberController::class, 'export'])->name('members.export');
         Route::get('members/export-pending-fees', [MemberController::class, 'exportPendingFees'])->name('members.export-pending-fees');
         Route::get('members/pending-fees', [MemberController::class, 'pendingFees'])->name('members.pending-fees');
         Route::get('members/package-setup', [MemberPackageSetupController::class, 'index'])->name('members.package-setup');

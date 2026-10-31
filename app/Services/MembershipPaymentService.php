@@ -423,9 +423,18 @@ class MembershipPaymentService
 
         $active = $member->subscriptions()->where('status', 'active')->latest('id')->first();
         if ($active) {
-            $active->update($payload);
+            $samePeriod = optional($active->start_date)->toDateString() === $start
+                && optional($active->end_date)->toDateString() === $end
+                && (int) $active->membership_plan_id === (int) $plan->id;
 
-            return $active->fresh();
+            if ($samePeriod) {
+                $active->update($payload);
+
+                return $active->fresh();
+            }
+
+            // New package period: keep old row for history, then create a fresh active one.
+            $active->update(['status' => 'cancelled']);
         }
 
         return $member->subscriptions()->create($payload);
